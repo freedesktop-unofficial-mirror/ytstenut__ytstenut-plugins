@@ -6,6 +6,8 @@ AM_CFLAGS = \
 LDADD = \
 	$(SALUT_LIBS)
 
+plugindir = $(salutplugindir)
+
 plugin_LTLIBRARIES = ytstenut.la
 
 AM_LDFLAGS = -module -avoid-version -shared

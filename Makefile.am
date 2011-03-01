@@ -1,1 +1,8 @@
-SUBDIRS = src
+
+if WITH_SALUT
+SALUT_DIR = salut
+else
+SALUT_DIR =
+endif
+
+SUBDIRS = $(SALUT_DIR)
