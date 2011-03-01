@@ -222,9 +222,7 @@ static void
 mcp_account_manager_ytstenut_ready (const McpAccountStorage *storage,
     const McpAccountManager *manager)
 {
-  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (storage);
   DEBUG (G_STRFUNC);
-  g_signal_emit_by_name (self, "created", YTSTENUT_ACCOUNT_NAME);
 }
 
 static guint
