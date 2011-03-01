@@ -24,8 +24,27 @@ else
 	AC_MSG_WARN([Not building the salut module. No telepathy-salut.pc file.])
 fi
 
-ERROR_CFLAGS="-Wall -Wextra -Wno-missing-field-initializers -Wno-unused-parameter -Wdeclaration-after-statement -Wshadow -Wmissing-prototypes -Wmissing-declarations"
-AC_SUBST(ERROR_CFLAGS)
+
+# ------------------------------------------------------------------------------
+
+AC_ARG_ENABLE(debug,
+	AC_HELP_STRING([--enable-debug],
+	[Compile binaries in debug mode]))
+
+AC_MSG_CHECKING(for DEBUG mode)
+if test "$enable_debug" = "yes"; then
+	CFLAGS="$CFLAGS -g -O0 -Werror -DG_DISABLE_DEPRECATED"
+	AC_DEFINE_UNQUOTED(_DEBUG, 1, [In debug mode])
+	AC_MSG_RESULT(yes)
+else
+	AC_MSG_RESULT(no)
+fi
+
+CFLAGS="$CFLAGS -Wall -Wextra -Wno-missing-field-initializers \
+	-Wno-unused-parameter -Wdeclaration-after-statement -Wshadow \
+	-Wmissing-prototypes -Wmissing-declarations"
+
+AC_SUBST(CFLAGS)
 
 AC_OUTPUT([
 	Makefile

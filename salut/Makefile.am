@@ -1,5 +1,4 @@
 AM_CFLAGS = \
-	$(ERROR_CFLAGS) \
 	-DG_LOG_DOMAIN=\"ytstenut\" \
 	$(SALUT_CFLAGS)
 
