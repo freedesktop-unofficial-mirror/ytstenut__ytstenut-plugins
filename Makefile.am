@@ -5,4 +5,4 @@ else
 SALUT_DIR =
 endif
 
-SUBDIRS = $(SALUT_DIR)
+SUBDIRS = mission-control $(SALUT_DIR)
