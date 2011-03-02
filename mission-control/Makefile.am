@@ -1,7 +1,8 @@
 AM_CFLAGS = \
 	-I$(top_srcdir) \
 	$(MISSION_CONTROL_MODULE_CFLAGS) \
-	$(TELEPATHY_GLIB_CFLAGS)
+	$(TELEPATHY_GLIB_CFLAGS) \
+	$(TELEPATHY_YTSTENUT_CFLAGS)
 
 pluginsdir = $(MISSION_CONTROL_PLUGINS_DIR)
 plugins_LTLIBRARIES = \
@@ -13,7 +14,8 @@ mcp_account_manager_ytstenut_la_SOURCES = \
 
 mcp_account_manager_ytstenut_la_LIBADD = \
 	$(MISSION_CONTROL_MODULE_LIBS) \
-	$(TELEPATHY_GLIB_LIBS)
+	$(TELEPATHY_GLIB_LIBS) \
+	$(TELEPATHY_YTSTENUT_LIBS)
 
 mcp_account_manager_ytstenut_la_LDFLAGS = \
 	-module \

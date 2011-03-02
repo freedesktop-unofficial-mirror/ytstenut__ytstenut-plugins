@@ -26,6 +26,8 @@
 
 #include <mission-control-plugins/mission-control-plugins.h>
 
+#include <telepathy-glib/dbus-properties-mixin.h>
+
 #ifndef __MCP_ACCOUNT_MANAGER_YTSTENUT_H__
 #define __MCP_ACCOUNT_MANAGER_YTSTENUT_H__
 
@@ -50,14 +52,13 @@ G_BEGIN_DECLS
 typedef struct _McpAccountManagerYtstenut McpAccountManagerYtstenut;
 typedef struct _McpAccountManagerYtstenutClass McpAccountManagerYtstenutClass;
 
-struct _McpAccountManagerYtstenut
-{
+struct _McpAccountManagerYtstenut {
   GObject parent;
 };
 
-struct _McpAccountManagerYtstenutClass
-{
+struct _McpAccountManagerYtstenutClass {
   GObjectClass parent_class;
+  TpDBusPropertiesMixinClass dbus_props_class;
 };
 
 GType mcp_account_manager_ytstenut_get_type (void);

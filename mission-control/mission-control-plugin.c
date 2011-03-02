@@ -32,9 +32,6 @@ mcp_plugin_ref_nth_object (guint n)
 {
   static void *plugin_0 = NULL;
 
-  if (plugin_0 == NULL)
-    plugin_0 = g_object_new (MCP_TYPE_ACCOUNT_MANAGER_YTSTENUT, NULL);
-
   switch (n)
     {
       case 0:
@@ -42,7 +39,6 @@ mcp_plugin_ref_nth_object (guint n)
           plugin_0 = g_object_new (MCP_TYPE_ACCOUNT_MANAGER_YTSTENUT, NULL);
         else
           g_object_ref (plugin_0);
-
         return plugin_0;
 
       default:

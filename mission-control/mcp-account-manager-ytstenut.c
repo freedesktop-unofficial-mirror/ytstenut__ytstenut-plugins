@@ -28,9 +28,13 @@
 
 #include "mcp-account-manager-ytstenut.h"
 
-#include <telepathy-glib/telepathy-glib.h>
+#include <dbus/dbus-glib.h>
 
 #include <glib/gi18n-lib.h>
+
+#include <telepathy-glib/telepathy-glib.h>
+
+#include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
 #define DEBUG g_debug
 #define PLUGIN_NAME "ytstenut"
@@ -38,6 +42,26 @@
 #define PLUGIN_DESCRIPTION "Provide Telepathy Accounts from ytstenut"
 #define PLUGIN_PROVIDER "com.meego.xpmn.ytstenut"
 #define YTSTENUT_ACCOUNT_NAME "salut/local-ytstenut/automatic_account"
+#define YTSTENUT_ACCOUNT_PATH \
+  TP_ACCOUNT_OBJECT_PATH_BASE YTSTENUT_ACCOUNT_NAME
+#define ACCOUNT_MANAGER_PATH "/com/meego/xpmn/ytstenut/AccountManager"
+
+/* For using a GHashTable as a hash set */
+#define NO_VALUE (GUINT_TO_POINTER (1))
+
+/* properties */
+enum
+{
+  PROP_ACCOUNT = 1,
+  LAST_PROPERTY
+};
+
+/* private structure */
+typedef struct _McpAccountManagerYtstenutPrivate {
+  GHashTable *hold_requests;
+  TpDBusDaemon *dbus_daemon;
+  TpAccount *account_proxy;
+} McpAccountManagerYtstenutPrivate;
 
 typedef struct {
   char *key;
@@ -45,13 +69,13 @@ typedef struct {
 } Parameter;
 
 static const Parameter account_parameters[] = {
-      { "manager", "salut" },
-      { "protocol", "local-ytstenut" },
-      { "Icon", "im-facebook" },
-      { "Service", "facebook" },
-      { "ConnectAutomatically", "true" },
-      { "Hidden", "true" },
-      { "Enabled", "true" },
+    { "manager", "salut" },
+    { "protocol", "local-ytstenut" },
+    { "Icon", "im-facebook" },
+    { "Service", "facebook" },
+    { "ConnectAutomatically", "true" },
+    { "Hidden", "true" },
+    { "Enabled", "true" },
 };
 
 static const Parameter account_translated_parameters[] = {
@@ -59,12 +83,27 @@ static const Parameter account_translated_parameters[] = {
 };
 
 static void mcp_account_manager_ytstenut_account_storage_iface_init (
-    McpAccountStorageIface *iface);
+    McpAccountStorageIface *iface, gpointer iface_data);
+
+static void mcp_account_manager_ytstenut_account_manager_iface_init (
+    YtstenutSvcAccountManagerClass *iface, gpointer iface_data);
+
+static void account_manager_hold (McpAccountManagerYtstenut *self,
+    const gchar *client);
+
+static void account_manager_release (McpAccountManagerYtstenut *self,
+    const gchar *client);
 
 G_DEFINE_TYPE_WITH_CODE (McpAccountManagerYtstenut,
     mcp_account_manager_ytstenut, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (MCP_TYPE_ACCOUNT_STORAGE,
-        mcp_account_manager_ytstenut_account_storage_iface_init));
+        mcp_account_manager_ytstenut_account_storage_iface_init);
+    G_IMPLEMENT_INTERFACE (YTSTENUT_TYPE_SVC_ACCOUNTMANAGER,
+        mcp_account_manager_ytstenut_account_manager_iface_init);
+);
+
+#define GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE \
+    ((o), MCP_TYPE_ACCOUNT_MANAGER_YTSTENUT, McpAccountManagerYtstenutPrivate))
 
 /* -----------------------------------------------------------------------------
  * INTERNAL
@@ -127,6 +166,88 @@ account_manager_get_key (const McpAccountManager *am,
   return TRUE;
 }
 
+static void
+on_account_request_presence_ready (GObject *source, GAsyncResult *res,
+                                   gpointer user_data)
+{
+  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (user_data);
+  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  GError *error = NULL;
+
+  g_assert (priv->account_proxy);
+  if (!tp_account_request_presence_finish (priv->account_proxy, res, &error))
+    {
+      g_warning ("couldn't request change for account presence: %s",
+          error->message);
+      g_clear_error (&error);
+    }
+
+  /* Matches in account_manager_set_presence */
+  g_object_unref (self);
+}
+
+static void
+account_manager_set_presence (McpAccountManagerYtstenut *self,
+                              TpConnectionPresenceType presence)
+{
+  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  GError *error = NULL;
+
+  if (!priv->account_proxy)
+    {
+      priv->account_proxy = tp_account_new (priv->dbus_daemon,
+          YTSTENUT_ACCOUNT_PATH, &error);
+      if (error)
+        {
+          g_warning ("couldn't create account proxy: %s", error->message);
+          g_clear_error (&error);
+          return;
+        }
+    }
+
+  tp_account_request_presence_async (priv->account_proxy, presence, "", "",
+      on_account_request_presence_ready, g_object_ref (self));
+}
+
+static void
+on_name_owner_changed (TpDBusDaemon *bus_daemon,
+                       const gchar *name,
+                       const gchar *new_owner,
+                       gpointer user_data)
+{
+  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (user_data);
+
+  /* if they fell of the bus, cancel their request for them */
+  if (new_owner == NULL || new_owner[0] == '\0')
+      account_manager_release (self, name);
+}
+
+static void
+account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
+{
+  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+
+  g_hash_table_insert (priv->hold_requests, g_strdup (client), NO_VALUE);
+  tp_dbus_daemon_watch_name_owner (priv->dbus_daemon, client,
+      on_name_owner_changed, self, NULL);
+
+  if (g_hash_table_size (priv->hold_requests) > 1)
+    account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_AVAILABLE);
+}
+
+static void
+account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
+{
+  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+
+  g_hash_table_remove (priv->hold_requests, client);
+  tp_dbus_daemon_cancel_name_owner_watch (priv->dbus_daemon, client,
+       on_name_owner_changed, self);
+
+  if (g_hash_table_size (priv->hold_requests) == 0)
+    account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_OFFLINE);
+}
+
 /* -----------------------------------------------------------------------------
  * OBJECT
  */
@@ -134,13 +255,107 @@ account_manager_get_key (const McpAccountManager *am,
 static void
 mcp_account_manager_ytstenut_init (McpAccountManagerYtstenut *self)
 {
+  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  GError *error = NULL;
+
   DEBUG ("Plugin initialised");
+
+  priv->hold_requests = g_hash_table_new_full (g_str_hash, g_str_equal,
+      g_free, NULL);
+
+  priv->dbus_daemon = tp_dbus_daemon_dup (&error);
+  if (!priv->dbus_daemon)
+    {
+      g_warning ("can't get Tp DBus daemon wrapper: %s", error->message);
+      g_error_free (error);
+  }
+}
+
+static GObject *
+mcp_account_manager_ytstenut_constructor (GType type,
+    guint n_props,
+    GObjectConstructParam *props)
+{
+  McpAccountManagerYtstenutPrivate *priv;
+  GObject *obj;
+
+  obj = G_OBJECT_CLASS (mcp_account_manager_ytstenut_parent_class)->
+           constructor (type, n_props, props);
+
+  if (obj)
+    {
+      priv = GET_PRIVATE (obj);
+      tp_dbus_daemon_register_object (priv->dbus_daemon, ACCOUNT_MANAGER_PATH,
+          obj);
+    }
+
+  return obj;
+}
+
+static void
+mcp_account_manager_ytstenut_get_property (GObject *object,
+                                           guint property_id,
+                                           GValue *value,
+                                           GParamSpec *pspec)
+{
+  switch (property_id)
+    {
+      case PROP_ACCOUNT:
+        g_value_set_static_boxed (value, YTSTENUT_ACCOUNT_PATH);
+        break;
+      default:
+        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+        break;
+    }
+}
+
+static void
+mcp_account_manager_ytstenut_finalize (GObject *object)
+{
+  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (object);
+
+  g_hash_table_destroy (priv->hold_requests);
+
+  if (priv->dbus_daemon)
+    g_object_unref (priv->dbus_daemon);
+  if (priv->account_proxy)
+    g_object_unref (priv->account_proxy);
+
+  G_OBJECT_CLASS (mcp_account_manager_ytstenut_parent_class)->finalize (object);
 }
 
 static void
 mcp_account_manager_ytstenut_class_init (McpAccountManagerYtstenutClass *klass)
 {
+  GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
+  static TpDBusPropertiesMixinPropImpl account_manager_props[] = {
+      { "Account", "account", NULL },
+      { NULL }
+  };
+
+  static TpDBusPropertiesMixinIfaceImpl prop_interfaces[] = {
+      { YTSTENUT_IFACE_ACCOUNTMANAGER,
+        tp_dbus_properties_mixin_getter_gobject_properties,
+        NULL,
+        account_manager_props,
+      },
+      { NULL }
+  };
+
+  object_class->constructor = mcp_account_manager_ytstenut_constructor;
+  object_class->get_property = mcp_account_manager_ytstenut_get_property;
+  object_class->finalize = mcp_account_manager_ytstenut_finalize;
+
+  g_object_class_install_property (object_class, PROP_ACCOUNT,
+       g_param_spec_boxed ("account", "Account",
+           "Object path to automatically created account",
+           DBUS_TYPE_G_OBJECT_PATH,
+           G_PARAM_READABLE | G_PARAM_STATIC_STRINGS));
+
+  klass->dbus_props_class.interfaces = prop_interfaces;
+  tp_dbus_properties_mixin_class_init (object_class,
+      G_STRUCT_OFFSET (McpAccountManagerYtstenutClass, dbus_props_class));
 }
 
 static gboolean
@@ -238,7 +453,7 @@ mcp_account_manager_ytstenut_get_restrictions (const McpAccountStorage *storage,
 
 static void
 mcp_account_manager_ytstenut_account_storage_iface_init (
-    McpAccountStorageIface *iface)
+    McpAccountStorageIface *iface, gpointer iface_data)
 {
   mcp_account_storage_iface_set_name (iface, PLUGIN_NAME);
   mcp_account_storage_iface_set_desc (iface, PLUGIN_DESCRIPTION);
@@ -259,4 +474,70 @@ mcp_account_manager_ytstenut_account_storage_iface_init (
       mcp_account_manager_ytstenut_ready);
   mcp_account_storage_iface_implement_get_restrictions (iface,
       mcp_account_manager_ytstenut_get_restrictions);
+}
+
+static void
+mcp_account_manager_ytstenut_hold (YtstenutSvcAccountManager *manager,
+    DBusGMethodInvocation *context)
+{
+  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (manager);
+  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  const char *client;
+  GError *error;
+
+  client = dbus_g_method_get_sender (context);
+  g_return_if_fail (client);
+
+  if (g_hash_table_lookup (priv->hold_requests, client))
+    {
+      error = g_error_new_literal (TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+          "The Hold() method has already been called successfully by "
+          "this caller.");
+      dbus_g_method_return_error (context, error);
+      g_error_free (error);
+    }
+  else
+    {
+      account_manager_hold (self, client);
+    }
+
+  ytstenut_svc_accountmanager_return_from_hold (context);
+}
+
+static void
+mcp_account_manager_ytstenut_release (YtstenutSvcAccountManager *manager,
+    DBusGMethodInvocation *context)
+{
+  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (manager);
+  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  const char *client;
+  GError *error;
+
+  client = dbus_g_method_get_sender (context);
+  g_return_if_fail (client);
+
+  if (g_hash_table_lookup (priv->hold_requests, client))
+    {
+      account_manager_release (self, client);
+    }
+  else
+    {
+      error = g_error_new_literal (TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+          "The Hold() method must be called successfully by this caller before "
+          "calling Release().");
+      dbus_g_method_return_error (context, error);
+      g_error_free (error);
+    }
+
+  ytstenut_svc_accountmanager_return_from_release (context);
+}
+
+static void
+mcp_account_manager_ytstenut_account_manager_iface_init (
+    YtstenutSvcAccountManagerClass *iface, gpointer iface_data)
+{
+  ytstenut_svc_accountmanager_implement_hold (iface,
+      mcp_account_manager_ytstenut_hold);
+  ytstenut_svc_accountmanager_implement_release (iface,
+      mcp_account_manager_ytstenut_release);
 }
