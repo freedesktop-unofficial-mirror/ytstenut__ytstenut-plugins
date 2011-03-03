@@ -98,7 +98,7 @@ G_DEFINE_TYPE_WITH_CODE (McpAccountManagerYtstenut,
     mcp_account_manager_ytstenut, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (MCP_TYPE_ACCOUNT_STORAGE,
         mcp_account_manager_ytstenut_account_storage_iface_init);
-    G_IMPLEMENT_INTERFACE (YTSTENUT_TYPE_SVC_ACCOUNTMANAGER,
+    G_IMPLEMENT_INTERFACE (YTSTENUT_TYPE_SVC_ACCOUNT_MANAGER,
         mcp_account_manager_ytstenut_account_manager_iface_init);
 );
 
@@ -335,7 +335,7 @@ mcp_account_manager_ytstenut_class_init (McpAccountManagerYtstenutClass *klass)
   };
 
   static TpDBusPropertiesMixinIfaceImpl prop_interfaces[] = {
-      { YTSTENUT_IFACE_ACCOUNTMANAGER,
+      { YTSTENUT_IFACE_ACCOUNT_MANAGER,
         tp_dbus_properties_mixin_getter_gobject_properties,
         NULL,
         account_manager_props,
@@ -497,7 +497,7 @@ mcp_account_manager_ytstenut_hold (YtstenutSvcAccountManager *manager,
       account_manager_hold (self, client);
     }
 
-  ytstenut_svc_accountmanager_return_from_hold (context);
+  ytstenut_svc_account_manager_return_from_hold (context);
 }
 
 static void
@@ -525,14 +525,14 @@ mcp_account_manager_ytstenut_release (YtstenutSvcAccountManager *manager,
       g_error_free (error);
     }
 
-  ytstenut_svc_accountmanager_return_from_release (context);
+  ytstenut_svc_account_manager_return_from_release (context);
 }
 
 static void
 mcp_account_manager_ytstenut_account_manager_iface_init (
     YtstenutSvcAccountManagerClass *iface, gpointer iface_data)
 {
-#define IMPLEMENT(x) ytstenut_svc_accountmanager_implement_##x (\
+#define IMPLEMENT(x) ytstenut_svc_account_manager_implement_##x (\
     iface, mcp_account_manager_ytstenut_##x)
   IMPLEMENT(hold);
   IMPLEMENT(release);
