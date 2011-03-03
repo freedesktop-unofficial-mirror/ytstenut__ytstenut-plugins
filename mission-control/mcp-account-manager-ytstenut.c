@@ -270,25 +270,14 @@ mcp_account_manager_ytstenut_init (McpAccountManagerYtstenut *self)
   }
 }
 
-static GObject *
-mcp_account_manager_ytstenut_constructor (GType type,
-    guint n_props,
-    GObjectConstructParam *props)
+static void
+mcp_account_manager_ytstenut_constructed (GObject *object)
 {
-  McpAccountManagerYtstenutPrivate *priv;
-  GObject *obj;
+  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (object);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
 
-  obj = G_OBJECT_CLASS (mcp_account_manager_ytstenut_parent_class)->
-           constructor (type, n_props, props);
-
-  if (obj)
-    {
-      priv = MCP_ACCOUNT_MANAGER_YTSTENUT (obj)->priv;
-      tp_dbus_daemon_register_object (priv->dbus_daemon, ACCOUNT_MANAGER_PATH,
-          obj);
-    }
-
-  return obj;
+  tp_dbus_daemon_register_object (priv->dbus_daemon, ACCOUNT_MANAGER_PATH,
+                                  self);
 }
 
 static void
@@ -343,7 +332,7 @@ mcp_account_manager_ytstenut_class_init (McpAccountManagerYtstenutClass *klass)
       { NULL }
   };
 
-  object_class->constructor = mcp_account_manager_ytstenut_constructor;
+  object_class->constructed = mcp_account_manager_ytstenut_constructed;
   object_class->get_property = mcp_account_manager_ytstenut_get_property;
   object_class->finalize = mcp_account_manager_ytstenut_finalize;
 
