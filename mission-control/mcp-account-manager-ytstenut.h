@@ -51,9 +51,12 @@ G_BEGIN_DECLS
 
 typedef struct _McpAccountManagerYtstenut McpAccountManagerYtstenut;
 typedef struct _McpAccountManagerYtstenutClass McpAccountManagerYtstenutClass;
+typedef struct _McpAccountManagerYtstenutPrivate
+    McpAccountManagerYtstenutPrivate;
 
 struct _McpAccountManagerYtstenut {
   GObject parent;
+  McpAccountManagerYtstenutPrivate *priv;
 };
 
 struct _McpAccountManagerYtstenutClass {

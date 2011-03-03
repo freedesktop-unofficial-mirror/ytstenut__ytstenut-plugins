@@ -57,11 +57,11 @@ enum
 };
 
 /* private structure */
-typedef struct _McpAccountManagerYtstenutPrivate {
+struct _McpAccountManagerYtstenutPrivate {
   GHashTable *hold_requests;
   TpDBusDaemon *dbus_daemon;
   TpAccount *account_proxy;
-} McpAccountManagerYtstenutPrivate;
+};
 
 typedef struct {
   char *key;
@@ -101,9 +101,6 @@ G_DEFINE_TYPE_WITH_CODE (McpAccountManagerYtstenut,
     G_IMPLEMENT_INTERFACE (YTSTENUT_TYPE_SVC_ACCOUNTMANAGER,
         mcp_account_manager_ytstenut_account_manager_iface_init);
 );
-
-#define GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE \
-    ((o), MCP_TYPE_ACCOUNT_MANAGER_YTSTENUT, McpAccountManagerYtstenutPrivate))
 
 /* -----------------------------------------------------------------------------
  * INTERNAL
@@ -171,7 +168,7 @@ on_account_request_presence_ready (GObject *source, GAsyncResult *res,
                                    gpointer user_data)
 {
   McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (user_data);
-  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
   GError *error = NULL;
 
   g_assert (priv->account_proxy);
@@ -190,7 +187,7 @@ static void
 account_manager_set_presence (McpAccountManagerYtstenut *self,
                               TpConnectionPresenceType presence)
 {
-  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
   GError *error = NULL;
 
   if (!priv->account_proxy)
@@ -225,7 +222,7 @@ on_name_owner_changed (TpDBusDaemon *bus_daemon,
 static void
 account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
 {
-  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
 
   g_hash_table_insert (priv->hold_requests, g_strdup (client), NO_VALUE);
   tp_dbus_daemon_watch_name_owner (priv->dbus_daemon, client,
@@ -238,7 +235,7 @@ account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
 static void
 account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
 {
-  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
 
   g_hash_table_remove (priv->hold_requests, client);
   tp_dbus_daemon_cancel_name_owner_watch (priv->dbus_daemon, client,
@@ -255,9 +252,11 @@ account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
 static void
 mcp_account_manager_ytstenut_init (McpAccountManagerYtstenut *self)
 {
-  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  McpAccountManagerYtstenutPrivate *priv = G_TYPE_INSTANCE_GET_PRIVATE (self,
+      MCP_TYPE_ACCOUNT_MANAGER_YTSTENUT, McpAccountManagerYtstenutPrivate);
   GError *error = NULL;
 
+  self->priv = priv;
   DEBUG ("Plugin initialised");
 
   priv->hold_requests = g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -284,7 +283,7 @@ mcp_account_manager_ytstenut_constructor (GType type,
 
   if (obj)
     {
-      priv = GET_PRIVATE (obj);
+      priv = MCP_ACCOUNT_MANAGER_YTSTENUT (obj)->priv;
       tp_dbus_daemon_register_object (priv->dbus_daemon, ACCOUNT_MANAGER_PATH,
           obj);
     }
@@ -312,7 +311,8 @@ mcp_account_manager_ytstenut_get_property (GObject *object,
 static void
 mcp_account_manager_ytstenut_finalize (GObject *object)
 {
-  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (object);
+  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (object);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
 
   g_hash_table_destroy (priv->hold_requests);
 
@@ -477,7 +477,7 @@ mcp_account_manager_ytstenut_hold (YtstenutSvcAccountManager *manager,
     DBusGMethodInvocation *context)
 {
   McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (manager);
-  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
   const char *client;
   GError *error;
 
@@ -505,7 +505,7 @@ mcp_account_manager_ytstenut_release (YtstenutSvcAccountManager *manager,
     DBusGMethodInvocation *context)
 {
   McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (manager);
-  McpAccountManagerYtstenutPrivate *priv = GET_PRIVATE (self);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
   const char *client;
   GError *error;
 
