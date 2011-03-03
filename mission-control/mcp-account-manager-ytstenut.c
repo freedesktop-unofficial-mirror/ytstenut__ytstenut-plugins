@@ -460,20 +460,16 @@ mcp_account_manager_ytstenut_account_storage_iface_init (
   mcp_account_storage_iface_set_priority (iface, PLUGIN_PRIORITY);
   mcp_account_storage_iface_set_provider (iface, PLUGIN_PROVIDER);
 
-  mcp_account_storage_iface_implement_get (iface,
-      mcp_account_manager_ytstenut_get);
-  mcp_account_storage_iface_implement_list (iface,
-      mcp_account_manager_ytstenut_list);
-  mcp_account_storage_iface_implement_set (iface,
-      mcp_account_manager_ytstenut_set);
-  mcp_account_storage_iface_implement_delete (iface,
-      mcp_account_manager_ytstenut_delete);
-  mcp_account_storage_iface_implement_commit (iface,
-      mcp_account_manager_ytstenut_commit);
-  mcp_account_storage_iface_implement_ready (iface,
-      mcp_account_manager_ytstenut_ready);
-  mcp_account_storage_iface_implement_get_restrictions (iface,
-      mcp_account_manager_ytstenut_get_restrictions);
+#define IMPLEMENT(x) mcp_account_storage_iface_implement_##x (\
+    iface, mcp_account_manager_ytstenut_##x)
+  IMPLEMENT(get);
+  IMPLEMENT(list);
+  IMPLEMENT(set);
+  IMPLEMENT(delete);
+  IMPLEMENT(commit);
+  IMPLEMENT(ready);
+  IMPLEMENT(get_restrictions);
+#undef IMPLEMENT
 }
 
 static void
@@ -536,8 +532,9 @@ static void
 mcp_account_manager_ytstenut_account_manager_iface_init (
     YtstenutSvcAccountManagerClass *iface, gpointer iface_data)
 {
-  ytstenut_svc_accountmanager_implement_hold (iface,
-      mcp_account_manager_ytstenut_hold);
-  ytstenut_svc_accountmanager_implement_release (iface,
-      mcp_account_manager_ytstenut_release);
+#define IMPLEMENT(x) ytstenut_svc_accountmanager_implement_##x (\
+    iface, mcp_account_manager_ytstenut_##x)
+  IMPLEMENT(hold);
+  IMPLEMENT(release);
+#undef IMPLEMENT
 }
