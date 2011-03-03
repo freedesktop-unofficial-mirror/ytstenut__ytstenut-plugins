@@ -71,8 +71,6 @@ typedef struct {
 static const Parameter account_parameters[] = {
     { "manager", "salut" },
     { "protocol", "local-ytstenut" },
-    { "Icon", "im-facebook" },
-    { "Service", "facebook" },
     { "ConnectAutomatically", "true" },
     { "Hidden", "true" },
     { "Enabled", "true" },
