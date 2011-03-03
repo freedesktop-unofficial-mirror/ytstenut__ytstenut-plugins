@@ -298,6 +298,20 @@ mcp_account_manager_ytstenut_get_property (GObject *object,
 }
 
 static void
+mcp_account_manager_ytstenut_dispose (GObject *object)
+{
+  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (object);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
+
+  g_hash_table_remove_all (priv->hold_requests);
+  tp_clear_object (&priv->dbus_daemon);
+  tp_clear_object (&priv->account_proxy);
+
+  if (G_OBJECT_CLASS (mcp_account_manager_ytstenut_parent_class)->dispose)
+    G_OBJECT_CLASS (mcp_account_manager_ytstenut_parent_class)->dispose (object);
+}
+
+static void
 mcp_account_manager_ytstenut_finalize (GObject *object)
 {
   McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (object);
@@ -305,12 +319,8 @@ mcp_account_manager_ytstenut_finalize (GObject *object)
 
   g_hash_table_destroy (priv->hold_requests);
 
-  if (priv->dbus_daemon)
-    g_object_unref (priv->dbus_daemon);
-  if (priv->account_proxy)
-    g_object_unref (priv->account_proxy);
-
-  G_OBJECT_CLASS (mcp_account_manager_ytstenut_parent_class)->finalize (object);
+  if (G_OBJECT_CLASS (mcp_account_manager_ytstenut_parent_class)->finalize)
+    G_OBJECT_CLASS (mcp_account_manager_ytstenut_parent_class)->finalize (object);
 }
 
 static void
@@ -334,6 +344,7 @@ mcp_account_manager_ytstenut_class_init (McpAccountManagerYtstenutClass *klass)
 
   object_class->constructed = mcp_account_manager_ytstenut_constructed;
   object_class->get_property = mcp_account_manager_ytstenut_get_property;
+  object_class->dispose = mcp_account_manager_ytstenut_dispose;
   object_class->finalize = mcp_account_manager_ytstenut_finalize;
 
   g_object_class_install_property (object_class, PROP_ACCOUNT,
