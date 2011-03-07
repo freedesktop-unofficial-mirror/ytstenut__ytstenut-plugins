@@ -46,9 +46,6 @@
   TP_ACCOUNT_OBJECT_PATH_BASE YTSTENUT_ACCOUNT_NAME
 #define ACCOUNT_MANAGER_PATH "/com/meego/xpmn/ytstenut/AccountManager"
 
-/* For using a GHashTable as a hash set */
-#define NO_VALUE (GUINT_TO_POINTER (1))
-
 /* Timeout after last release before going offline, in ms */
 #define RELEASE_TIMEOUT 5000
 
@@ -240,8 +237,11 @@ static void
 account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
 {
   McpAccountManagerYtstenutPrivate *priv = self->priv;
+  guint count;
 
-  g_hash_table_insert (priv->hold_requests, g_strdup (client), NO_VALUE);
+  count = GPOINTER_TO_UINT (g_hash_table_lookup (priv->hold_requests, client));
+  g_hash_table_replace (priv->hold_requests, g_strdup (client),
+      GUINT_TO_POINTER (++count));
   tp_dbus_daemon_watch_name_owner (priv->dbus_daemon, client,
       on_name_owner_changed, self, NULL);
 
@@ -253,6 +253,16 @@ static void
 account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
 {
   McpAccountManagerYtstenutPrivate *priv = self->priv;
+  guint count;
+
+  count = GPOINTER_TO_UINT (g_hash_table_lookup (priv->hold_requests, client));
+  g_assert (count > 0);
+
+  if (count > 1) {
+    g_hash_table_replace (priv->hold_requests, g_strdup (client),
+        GUINT_TO_POINTER (--count));
+    return;
+  }
 
   g_hash_table_remove (priv->hold_requests, client);
   tp_dbus_daemon_cancel_name_owner_watch (priv->dbus_daemon, client,
@@ -495,26 +505,12 @@ mcp_account_manager_ytstenut_hold (YtstenutSvcAccountManager *manager,
     DBusGMethodInvocation *context)
 {
   McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (manager);
-  McpAccountManagerYtstenutPrivate *priv = self->priv;
   const char *client;
-  GError *error;
 
   client = dbus_g_method_get_sender (context);
   g_return_if_fail (client);
 
-  if (g_hash_table_lookup (priv->hold_requests, client))
-    {
-      error = g_error_new_literal (TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
-          "The Hold() method has already been called successfully by "
-          "this caller.");
-      dbus_g_method_return_error (context, error);
-      g_error_free (error);
-    }
-  else
-    {
-      account_manager_hold (self, client);
-    }
-
+  account_manager_hold (self, client);
   ytstenut_svc_account_manager_return_from_hold (context);
 }
 
