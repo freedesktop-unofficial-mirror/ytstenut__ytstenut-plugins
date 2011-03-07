@@ -49,6 +49,9 @@
 /* For using a GHashTable as a hash set */
 #define NO_VALUE (GUINT_TO_POINTER (1))
 
+/* Timeout after last release before going offline, in ms */
+#define RELEASE_TIMEOUT 5000
+
 /* properties */
 enum
 {
@@ -61,6 +64,7 @@ struct _McpAccountManagerYtstenutPrivate {
   GHashTable *hold_requests;
   TpDBusDaemon *dbus_daemon;
   TpAccount *account_proxy;
+  gulong timeout_id;
 };
 
 typedef struct {
@@ -204,6 +208,21 @@ account_manager_set_presence (McpAccountManagerYtstenut *self,
       on_account_request_presence_ready, g_object_ref (self));
 }
 
+static gboolean
+on_release_timeout (gpointer user_data)
+{
+  McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (user_data);
+  McpAccountManagerYtstenutPrivate *priv = self->priv;
+
+  priv->timeout_id = 0;
+
+  if (g_hash_table_size (priv->hold_requests) == 0)
+    account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_OFFLINE);
+
+  /* Remove this source */
+  return FALSE;
+}
+
 static void
 on_name_owner_changed (TpDBusDaemon *bus_daemon,
                        const gchar *name,
@@ -239,8 +258,9 @@ account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
   tp_dbus_daemon_cancel_name_owner_watch (priv->dbus_daemon, client,
        on_name_owner_changed, self);
 
-  if (g_hash_table_size (priv->hold_requests) == 0)
-    account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_OFFLINE);
+  if (g_hash_table_size (priv->hold_requests) == 0 && !priv->timeout_id)
+    priv->timeout_id = g_timeout_add_seconds (RELEASE_TIMEOUT,
+        on_release_timeout, self);
 }
 
 /* -----------------------------------------------------------------------------
