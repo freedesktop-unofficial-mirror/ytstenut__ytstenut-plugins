@@ -259,19 +259,22 @@ account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
   count = GPOINTER_TO_UINT (g_hash_table_lookup (priv->hold_requests, client));
   g_assert (count > 0);
 
-  if (count > 1) {
-    g_hash_table_replace (priv->hold_requests, g_strdup (client),
-        GUINT_TO_POINTER (--count));
-    return;
-  }
+  if (count > 1)
+    {
+      g_hash_table_replace (priv->hold_requests, g_strdup (client),
+          GUINT_TO_POINTER (--count));
+      return;
+    }
 
   g_hash_table_remove (priv->hold_requests, client);
   tp_dbus_daemon_cancel_name_owner_watch (priv->dbus_daemon, client,
        on_name_owner_changed, self);
 
   if (g_hash_table_size (priv->hold_requests) == 0 && priv->timeout_id == 0)
-    priv->timeout_id = g_timeout_add_seconds (RELEASE_TIMEOUT,
-        on_release_timeout, self);
+    {
+      priv->timeout_id = g_timeout_add_seconds (RELEASE_TIMEOUT,
+          on_release_timeout, self);
+    }
 }
 
 /* -----------------------------------------------------------------------------
