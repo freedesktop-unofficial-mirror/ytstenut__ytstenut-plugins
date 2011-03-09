@@ -36,7 +36,10 @@
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
-#define DEBUG g_debug
+#undef DEBUG
+#define DEBUG(format, ...) \
+  g_debug ("%s (%d): " format, G_STRFUNC, __LINE__, ##__VA_ARGS__)
+
 #define PLUGIN_NAME "ytstenut"
 #define PLUGIN_PRIORITY (MCP_ACCOUNT_STORAGE_PLUGIN_PRIO_KEYRING + 20)
 #define PLUGIN_DESCRIPTION "Provide Telepathy Accounts from ytstenut"
@@ -177,6 +180,8 @@ on_account_request_presence_ready (GObject *source, GAsyncResult *res,
       g_clear_error (&error);
     }
 
+  DEBUG ("Account presence was changed");
+
   /* Matches in account_manager_set_presence */
   g_object_unref (self);
 }
@@ -199,6 +204,8 @@ account_manager_set_presence (McpAccountManagerYtstenut *self,
           return;
         }
     }
+
+  DEBUG ("Requesting that account presence be changed to: %d", (int)presence);
 
   tp_account_request_presence_async (priv->account_proxy, presence, "", "",
       on_account_request_presence_ready, g_object_ref (self));
@@ -229,7 +236,10 @@ on_name_owner_changed (TpDBusDaemon *bus_daemon,
 
   /* if they fell of the bus, cancel their request for them */
   if (new_owner == NULL || new_owner[0] == '\0')
+    {
+      DEBUG ("%s client went away", name);
       account_manager_release (self, name);
+    }
 }
 
 static void
@@ -237,6 +247,8 @@ account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
 {
   McpAccountManagerYtstenutPrivate *priv = self->priv;
   guint count;
+
+  DEBUG ("Adding hold reference for %s", client);
 
   count = GPOINTER_TO_UINT (g_hash_table_lookup (priv->hold_requests, client));
   g_hash_table_replace (priv->hold_requests, g_strdup (client),
@@ -246,7 +258,10 @@ account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
 
   account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_AVAILABLE);
   if (priv->timeout_id != 0)
-    g_source_remove (priv->timeout_id);
+    {
+      DEBUG ("Cancelling offline timeout: %d", RELEASE_TIMEOUT);
+      g_source_remove (priv->timeout_id);
+    }
 }
 
 static void
@@ -259,10 +274,14 @@ account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
 
   if (count > 1)
     {
+      DEBUG ("Releasing hold reference for %s", client);
+
       g_hash_table_replace (priv->hold_requests, g_strdup (client),
           GUINT_TO_POINTER (--count));
       return;
     }
+
+  DEBUG ("Releasing last hold reference for %s", client);
 
   g_hash_table_remove (priv->hold_requests, client);
   tp_dbus_daemon_cancel_name_owner_watch (priv->dbus_daemon, client,
@@ -270,6 +289,7 @@ account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
 
   if (g_hash_table_size (priv->hold_requests) == 0 && priv->timeout_id == 0)
     {
+      DEBUG ("Presence to offline after timeout: %d", RELEASE_TIMEOUT);
       priv->timeout_id = g_timeout_add_seconds (RELEASE_TIMEOUT,
           on_release_timeout, self);
     }
@@ -435,7 +455,7 @@ static GList *
 mcp_account_manager_ytstenut_list (const McpAccountStorage *storage,
     const McpAccountManager *manager)
 {
-  DEBUG (G_STRFUNC);
+  DEBUG ("list");
   return g_list_prepend (NULL, g_strdup (YTSTENUT_ACCOUNT_NAME));
 }
 
@@ -445,7 +465,7 @@ mcp_account_manager_ytstenut_delete (const McpAccountStorage *storage,
     const gchar *account,
     const gchar *key)
 {
-  DEBUG ("%s: (%s, %s)", G_STRFUNC, account, key);
+  DEBUG ("account: %s / key: %s", account, key);
 
   if (tp_strdiff (account, YTSTENUT_ACCOUNT_NAME))
     return FALSE;
@@ -461,7 +481,7 @@ static gboolean
 mcp_account_manager_ytstenut_commit (const McpAccountStorage *storage,
     const McpAccountManager *manager)
 {
-  DEBUG ("%s", G_STRFUNC);
+  DEBUG ("no commit required");
   return TRUE;
 }
 
@@ -469,7 +489,7 @@ static void
 mcp_account_manager_ytstenut_ready (const McpAccountStorage *storage,
     const McpAccountManager *manager)
 {
-  DEBUG (G_STRFUNC);
+  DEBUG ("ready");
 }
 
 static guint
@@ -536,6 +556,7 @@ mcp_account_manager_ytstenut_release (YtstenutSvcAccountManager *manager,
     }
   else
     {
+      DEBUG ("Caller called Release() without Hold()");
       error = g_error_new_literal (TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
           "The Hold() method must be called successfully by this caller before "
           "calling Release().");
