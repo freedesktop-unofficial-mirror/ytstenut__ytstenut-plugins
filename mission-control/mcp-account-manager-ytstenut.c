@@ -386,6 +386,8 @@ mcp_account_manager_ytstenut_class_init (McpAccountManagerYtstenutClass *klass)
   klass->dbus_props_class.interfaces = prop_interfaces;
   tp_dbus_properties_mixin_class_init (object_class,
       G_STRUCT_OFFSET (McpAccountManagerYtstenutClass, dbus_props_class));
+
+  g_type_class_add_private (klass, sizeof (McpAccountManagerYtstenutPrivate));
 }
 
 static gboolean
