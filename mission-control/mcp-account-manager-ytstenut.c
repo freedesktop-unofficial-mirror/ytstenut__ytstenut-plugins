@@ -61,7 +61,7 @@ struct _McpAccountManagerYtstenutPrivate {
   GHashTable *hold_requests;
   TpDBusDaemon *dbus_daemon;
   TpAccount *account_proxy;
-  gulong timeout_id;
+  guint timeout_id;
 };
 
 typedef struct {
@@ -245,8 +245,9 @@ account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
   tp_dbus_daemon_watch_name_owner (priv->dbus_daemon, client,
       on_name_owner_changed, self, NULL);
 
-  if (g_hash_table_size (priv->hold_requests) > 1)
-    account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_AVAILABLE);
+  account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_AVAILABLE);
+  if (priv->timeout_id != 0)
+    g_source_remove (priv->timeout_id);
 }
 
 static void
@@ -268,7 +269,7 @@ account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
   tp_dbus_daemon_cancel_name_owner_watch (priv->dbus_daemon, client,
        on_name_owner_changed, self);
 
-  if (g_hash_table_size (priv->hold_requests) == 0 && !priv->timeout_id)
+  if (g_hash_table_size (priv->hold_requests) == 0 && priv->timeout_id == 0)
     priv->timeout_id = g_timeout_add_seconds (RELEASE_TIMEOUT,
         on_release_timeout, self);
 }
