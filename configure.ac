@@ -26,7 +26,7 @@ AC_SUBST(TELEPATHY_YTSTENUT_LIBS)
 # ------------------------------------------------------------------------------
 # MISSION CONTROL PLUGIN
 
-PKG_CHECK_MODULES(MISSION_CONTROL_MODULE, mission-control-plugins >= 5.5.4)
+PKG_CHECK_MODULES(MISSION_CONTROL_MODULE, mission-control-plugins >= 5.7.5)
 
 AC_ARG_WITH([mission-control-plugins-dir],
 	[AC_HELP_STRING([--with-mission-control-plugins-dir],
@@ -37,7 +37,7 @@ if test -z "$with_mc_plugins_dir"; then
 	AC_MSG_CHECKING([Mission Control plugins dir])
 	MISSION_CONTROL_PLUGINS_DIR=`pkg-config --variable=plugindir mission-control-plugins`
 else
-	MISSION_CONTROL_PLUGINS_DIR="$with_bisho_modules_dir"
+	MISSION_CONTROL_PLUGINS_DIR="$with_mc_plugins_dir"
 fi
 
 if test "x$MISSION_CONTROL_PLUGINS_DIR" = "x"; then
@@ -47,6 +47,14 @@ else
 fi
 AC_SUBST(MISSION_CONTROL_PLUGINS_DIR)
 
+AC_MSG_CHECKING([Mission Control executable])
+MISSION_CONTROL_EXECUTABLE=`pkg-config --variable=missioncontrolpath mission-control-plugins`
+if test "x$MISSION_CONTROL_EXECUTABLE" = "x"; then
+	AC_MSG_ERROR([could not determine location of mission control executable])
+else
+	AC_MSG_RESULT([$MISSION_CONTROL_EXECUTABLE])
+fi
+AC_SUBST(MISSION_CONTROL_EXECUTABLE)
 
 # ------------------------------------------------------------------------------
 # SALUT PLUGIN
@@ -80,6 +88,13 @@ AC_SUBST(CFLAGS)
 
 AC_OUTPUT([
 	Makefile
-	salut/Makefile
 	mission-control/Makefile
+	salut/Makefile
+	tests/Makefile
+	tests/twisted/Makefile
+	tests/twisted/tools/Makefile
+	tests/twisted/tools/exec-with-log.sh
+	tests/twisted/tools/tmp-session-bus.conf
+	tests/twisted/tools/org.freedesktop.Telepathy.MissionControl5.service
+	tests/twisted/tools/org.freedesktop.Telepathy.Client.Logger.service
 ])

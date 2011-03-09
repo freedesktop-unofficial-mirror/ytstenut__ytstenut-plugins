@@ -1,2 +1,5 @@
 
-SUBDIRS = mission-control salut
+SUBDIRS = \
+	mission-control \
+	salut \
+	tests
