@@ -170,7 +170,6 @@ on_account_request_presence_ready (GObject *source, GAsyncResult *res,
   McpAccountManagerYtstenutPrivate *priv = self->priv;
   GError *error = NULL;
 
-  g_assert (priv->account_proxy);
   if (!tp_account_request_presence_finish (priv->account_proxy, res, &error))
     {
       g_warning ("couldn't request change for account presence: %s",
@@ -257,7 +256,6 @@ account_manager_release (McpAccountManagerYtstenut *self, const gchar *client)
   guint count;
 
   count = GPOINTER_TO_UINT (g_hash_table_lookup (priv->hold_requests, client));
-  g_assert (count > 0);
 
   if (count > 1)
     {
