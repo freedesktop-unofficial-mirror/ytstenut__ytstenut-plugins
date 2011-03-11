@@ -354,6 +354,10 @@ mcp_account_manager_ytstenut_dispose (GObject *object)
   McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (object);
   McpAccountManagerYtstenutPrivate *priv = self->priv;
 
+  if (priv->timeout_id != 0)
+    g_source_remove (priv->timeout_id);
+  priv->timeout_id = 0;
+
   g_hash_table_remove_all (priv->hold_requests);
   tp_clear_object (&priv->dbus_daemon);
   tp_clear_object (&priv->account_proxy);
