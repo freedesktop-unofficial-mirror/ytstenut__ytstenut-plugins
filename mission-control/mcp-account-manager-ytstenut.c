@@ -261,6 +261,7 @@ account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
     {
       DEBUG ("Cancelling offline timeout: %d", RELEASE_TIMEOUT);
       g_source_remove (priv->timeout_id);
+      priv->timeout_id = 0;
     }
 }
 
