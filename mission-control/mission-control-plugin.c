@@ -27,6 +27,8 @@
 
 #include "mcp-account-manager-ytstenut.h"
 
+void mcd_plugin_init (void *unused);
+
 GObject *
 mcp_plugin_ref_nth_object (guint n)
 {
@@ -44,4 +46,10 @@ mcp_plugin_ref_nth_object (guint n)
       default:
         return NULL;
     }
+}
+
+void
+mcd_plugin_init (void *unused)
+{
+  /* Nothing intresting to do */
 }

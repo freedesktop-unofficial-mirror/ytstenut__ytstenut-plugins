@@ -21,4 +21,4 @@ mcp_account_manager_ytstenut_la_LDFLAGS = \
 	-module \
 	-avoid-version \
 	-no-undefined \
-	-export-symbols-regex mcp_plugin_ref_nth_object
+	-export-symbols-regex 'mcp_plugin_ref_nth_object|mcd_plugin_init'
