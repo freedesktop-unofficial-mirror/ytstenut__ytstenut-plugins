@@ -1,5 +1,10 @@
 #include <glib-object.h>
 
+#ifndef YTST_PLUGIN_H
+#define YTST_PLUGIN_H
+
+G_BEGIN_DECLS
+
 typedef struct _YtstPluginClass YtstPluginClass;
 typedef struct _YtstPlugin YtstPlugin;
 
@@ -30,3 +35,6 @@ GType ytst_plugin_get_type (void);
   (G_TYPE_INSTANCE_GET_CLASS ((obj), YTST_TYPE_PLUGIN, \
                               YtstPluginClass))
 
+G_END_DECLS
+
+#endif /* ifndef YTST_PLUGIN_H */
