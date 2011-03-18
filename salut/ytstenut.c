@@ -5,6 +5,8 @@
 #include <salut/plugin.h>
 #include <salut/protocol.h>
 
+#include "caps-manager.h"
+
 #define DEBUG(msg, ...) \
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
 
@@ -42,9 +44,13 @@ static GPtrArray *
 create_channel_managers (SalutPlugin *plugin,
     TpBaseConnection *connection)
 {
+  GPtrArray *ret = g_ptr_array_sized_new (1);
+
   DEBUG ("%p on connection %p", plugin, connection);
 
-  return NULL;
+  g_ptr_array_add (ret, g_object_new (YTST_TYPE_CAPS_MANAGER, NULL));
+
+  return ret;
 }
 
 static void

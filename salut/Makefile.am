@@ -13,4 +13,6 @@ AM_LDFLAGS = -module -avoid-version -shared
 
 ytstenut_la_SOURCES = \
 	ytstenut.c \
-	ytstenut.h
+	ytstenut.h \
+	caps-manager.c \
+	caps-manager.h
