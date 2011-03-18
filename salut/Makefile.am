@@ -12,5 +12,5 @@ plugin_LTLIBRARIES = ytstenut.la
 AM_LDFLAGS = -module -avoid-version -shared
 
 ytstenut_la_SOURCES = \
-	plugin.c \
-	plugin.h
+	ytstenut.c \
+	ytstenut.h

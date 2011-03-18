@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "plugin.h"
+#include "ytstenut.h"
 
 #include <salut/plugin.h>
 #include <salut/protocol.h>
