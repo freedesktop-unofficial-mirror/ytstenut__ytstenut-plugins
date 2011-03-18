@@ -1,32 +1,32 @@
 #include <glib-object.h>
 
-typedef struct _YtstenutPluginClass YtstenutPluginClass;
-typedef struct _YtstenutPlugin YtstenutPlugin;
+typedef struct _YtstPluginClass YtstPluginClass;
+typedef struct _YtstPlugin YtstPlugin;
 
-struct _YtstenutPluginClass
+struct _YtstPluginClass
 {
   GObjectClass parent;
 };
 
-struct _YtstenutPlugin
+struct _YtstPlugin
 {
   GObject parent;
 };
 
-GType ytstenut_plugin_get_type (void);
+GType ytst_plugin_get_type (void);
 
-#define YTSTENUT_TYPE_PLUGIN \
-  (ytstenut_plugin_get_type ())
-#define YTSTENUT_PLUGIN(obj) \
-  (G_TYPE_CHECK_INSTANCE_CAST((obj), YTSTENUT_TYPE_PLUGIN, YtstenutPlugin))
-#define YTSTENUT_PLUGIN_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_CAST((klass), YTSTENUT_TYPE_PLUGIN, \
-                           YtstenutPluginClass))
-#define YTSTENUT_IS_PLUGIN(obj) \
-  (G_TYPE_CHECK_INSTANCE_TYPE((obj), YTSTENUT_TYPE_PLUGIN))
-#define YTSTENUT_IS_PLUGIN_CLASS(klass) \
-  (G_TYPE_CHECK_CLASS_TYPE((klass), YTSTENUT_TYPE_PLUGIN))
-#define YTSTENUT_PLUGIN_GET_CLASS(obj) \
-  (G_TYPE_INSTANCE_GET_CLASS ((obj), YTSTENUT_TYPE_PLUGIN, \
-                              YtstenutPluginClass))
+#define YTST_TYPE_PLUGIN \
+  (ytst_plugin_get_type ())
+#define YTST_PLUGIN(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj), YTST_TYPE_PLUGIN, YtstPlugin))
+#define YTST_PLUGIN_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass), YTST_TYPE_PLUGIN, \
+                           YtstPluginClass))
+#define YTST_IS_PLUGIN(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj), YTST_TYPE_PLUGIN))
+#define YTST_IS_PLUGIN_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass), YTST_TYPE_PLUGIN))
+#define YTST_PLUGIN_GET_CLASS(obj) \
+  (G_TYPE_INSTANCE_GET_CLASS ((obj), YTST_TYPE_PLUGIN, \
+                              YtstPluginClass))
 

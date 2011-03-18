@@ -10,18 +10,18 @@
 
 static void plugin_iface_init (gpointer g_iface, gpointer data);
 
-G_DEFINE_TYPE_WITH_CODE (YtstenutPlugin, ytstenut_plugin, G_TYPE_OBJECT,
+G_DEFINE_TYPE_WITH_CODE (YtstPlugin, ytst_plugin, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (SALUT_TYPE_PLUGIN, plugin_iface_init);
     )
 
 static void
-ytstenut_plugin_init (YtstenutPlugin *object)
+ytst_plugin_init (YtstPlugin *object)
 {
   DEBUG ("%p", object);
 }
 
 static void
-ytstenut_plugin_class_init (YtstenutPluginClass *klass)
+ytst_plugin_class_init (YtstPluginClass *klass)
 {
 }
 
@@ -65,5 +65,5 @@ plugin_iface_init (
 SalutPlugin *
 salut_plugin_create (void)
 {
-  return g_object_new (YTSTENUT_TYPE_PLUGIN, NULL);
+  return g_object_new (YTST_TYPE_PLUGIN, NULL);
 }
