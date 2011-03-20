@@ -1,7 +1,8 @@
 # D-Bus service file for testing
 service_in_files = \
 	org.freedesktop.Telepathy.MissionControl5.service.in \
-	org.freedesktop.Telepathy.Client.Logger.service.in
+	org.freedesktop.Telepathy.Client.Logger.service.in \
+	org.freedesktop.Telepathy.ConnectionManager.salut.service.in
 service_files = $(service_in_files:.conf.in=.conf)
 
 # D-Bus config file for testing

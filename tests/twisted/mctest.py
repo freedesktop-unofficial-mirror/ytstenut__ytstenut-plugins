@@ -114,7 +114,7 @@ def exec_test_deferred (fun, params, protocol=None, timeout=None,
     queue.cleanup()
 
     if error is None:
-      reactor.callLater(0, reactor.stop)
+      reactor.callLater(0, reactor.crash)
     else:
       # please ignore the POSIX behind the curtain
       os._exit(1)

@@ -1,0 +1,8 @@
+
+[ConnectionManager]
+BusName=org.freedesktop.Telepathy.ConnectionManager.salut
+ObjectPath=/org/freedesktop/Telepathy/ConnectionManager/salut
+Interfaces=
+
+[Protocol local-ytstenut]
+param-account=s

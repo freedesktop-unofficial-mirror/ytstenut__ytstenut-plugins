@@ -1,6 +1,7 @@
 TWISTED_TESTS =
 
-TWISTED_BASIC_TESTS =
+TWISTED_BASIC_TESTS = \
+	ytstenut/account.py
 
 config.py: Makefile
 	$(AM_V_GEN) { \

@@ -65,6 +65,15 @@ AC_SUBST(SALUT_CFLAGS)
 salutplugindir=`pkg-config --variable=plugindir telepathy-salut`
 AC_SUBST(salutplugindir)
 
+AC_MSG_CHECKING([telepathy-salut executable])
+SALUT_EXECUTABLE=`pkg-config --variable=salutpath telepathy-salut`
+if test "$SALUT_EXECUTABLE" = ""; then
+	AC_MSG_ERROR([could not determine location of telepathy-salut executable])
+else
+	AC_MSG_RESULT([$SALUT_EXECUTABLE])
+fi
+AC_SUBST(SALUT_EXECUTABLE)
+
 # ------------------------------------------------------------------------------
 
 AC_ARG_ENABLE(debug,
@@ -97,4 +106,5 @@ AC_OUTPUT([
 	tests/twisted/tools/tmp-session-bus.conf
 	tests/twisted/tools/org.freedesktop.Telepathy.MissionControl5.service
 	tests/twisted/tools/org.freedesktop.Telepathy.Client.Logger.service
+	tests/twisted/tools/org.freedesktop.Telepathy.ConnectionManager.salut.service
 ])

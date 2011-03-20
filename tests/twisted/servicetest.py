@@ -84,7 +84,7 @@ class EventPattern:
             except AttributeError:
                 return False
 
-        if self.predicate(event):
+        if self.predicate is None or self.predicate(event):
             return True
 
         return False
