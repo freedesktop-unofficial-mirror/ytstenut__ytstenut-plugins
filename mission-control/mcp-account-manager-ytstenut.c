@@ -38,7 +38,7 @@
 
 #undef DEBUG
 #define DEBUG(format, ...) \
-  g_debug ("%s (%d): " format, G_STRFUNC, __LINE__, ##__VA_ARGS__)
+  g_debug ("%s (line:%d): " format, G_STRFUNC, __LINE__, ##__VA_ARGS__)
 
 #define PLUGIN_NAME "ytstenut"
 #define PLUGIN_PRIORITY (MCP_ACCOUNT_STORAGE_PLUGIN_PRIO_KEYRING + 20)
@@ -49,8 +49,8 @@
   TP_ACCOUNT_OBJECT_PATH_BASE YTSTENUT_ACCOUNT_NAME
 #define ACCOUNT_MANAGER_PATH "/com/meego/xpmn/ytstenut/AccountManager"
 
-/* Timeout after last release before going offline, in ms */
-#define RELEASE_TIMEOUT 5000
+/* Timeout after last release before going offline, in seconds */
+#define RELEASE_TIMEOUT 5
 
 /* properties */
 enum
@@ -219,6 +219,8 @@ on_release_timeout (gpointer user_data)
 
   priv->timeout_id = 0;
 
+  DEBUG ("Release timeout called");
+
   if (g_hash_table_size (priv->hold_requests) == 0)
     account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_OFFLINE);
 
@@ -259,7 +261,7 @@ account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
   account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_AVAILABLE);
   if (priv->timeout_id != 0)
     {
-      DEBUG ("Cancelling offline timeout: %d", RELEASE_TIMEOUT);
+      DEBUG ("Cancelling offline timeout");
       g_source_remove (priv->timeout_id);
       priv->timeout_id = 0;
     }
@@ -355,7 +357,10 @@ mcp_account_manager_ytstenut_dispose (GObject *object)
   McpAccountManagerYtstenutPrivate *priv = self->priv;
 
   if (priv->timeout_id != 0)
-    g_source_remove (priv->timeout_id);
+    {
+      DEBUG ("Cancelling offline timeout");
+      g_source_remove (priv->timeout_id);
+    }
   priv->timeout_id = 0;
 
   g_hash_table_remove_all (priv->hold_requests);
