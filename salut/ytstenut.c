@@ -55,7 +55,7 @@ initialize (SalutPlugin *plugin,
   DEBUG ("%p on connection manager %p", plugin, connection_manager);
 
   protocol = salut_protocol_new (G_TYPE_NONE,
-      "_ytstenut._tcp", "ytstenut", "Ytstenut protocol", "im-ytstenut");
+      "_ytstenut._tcp", "local-ytstenut", "Ytstenut protocol", "im-ytstenut");
   tp_base_connection_manager_add_protocol (connection_manager, protocol);
 }
 
