@@ -21,13 +21,21 @@
 
 #include "ytstenut.h"
 
+#include "caps-manager.h"
+#include "status.h"
+
 #include <salut/plugin.h>
 #include <salut/protocol.h>
 
-#include "caps-manager.h"
+#include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
 #define DEBUG(msg, ...) \
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
+
+static const gchar * const sidecar_interfaces[] = {
+    YTSTENUT_IFACE_STATUS,
+  NULL
+};
 
 static void plugin_iface_init (gpointer g_iface, gpointer data);
 
@@ -47,7 +55,7 @@ ytst_plugin_class_init (YtstPluginClass *klass)
 }
 
 static void
-initialize (SalutPlugin *plugin,
+ytstenut_plugin_initialize (SalutPlugin *plugin,
     TpBaseConnectionManager *connection_manager)
 {
   TpBaseProtocol *protocol;
@@ -59,8 +67,43 @@ initialize (SalutPlugin *plugin,
   tp_base_connection_manager_add_protocol (connection_manager, protocol);
 }
 
+static void
+ytstenut_plugin_create_sidecar (
+    SalutPlugin *plugin,
+    const gchar *sidecar_interface,
+    SalutConnection *connection,
+    WockySession *session,
+    GAsyncReadyCallback callback,
+    gpointer user_data)
+{
+  GSimpleAsyncResult *result = g_simple_async_result_new (G_OBJECT (plugin),
+      callback, user_data,
+      /* sic: all plugins share salut_plugin_create_sidecar_finish() so we
+       * need to use the same source tag.
+       */
+      salut_plugin_create_sidecar_async);
+  SalutSidecar *sidecar = NULL;
+
+  if (!tp_strdiff (sidecar_interface, YTSTENUT_IFACE_STATUS))
+    {
+      sidecar = SALUT_SIDECAR (ytst_status_new ());
+      DEBUG ("created side car for: %s", YTSTENUT_IFACE_STATUS);
+    }
+  else
+    {
+      g_simple_async_result_set_error (result, TP_ERRORS,
+          TP_ERROR_NOT_IMPLEMENTED, "'%s' not implemented", sidecar_interface);
+    }
+
+  if (sidecar != NULL)
+    g_simple_async_result_set_op_res_gpointer (result, sidecar, g_object_unref);
+
+  g_simple_async_result_complete_in_idle (result);
+  g_object_unref (result);
+}
+
 static GPtrArray *
-create_channel_managers (SalutPlugin *plugin,
+ytstenut_plugin_create_channel_managers (SalutPlugin *plugin,
     TpBaseConnection *connection)
 {
   GPtrArray *ret = g_ptr_array_sized_new (1);
@@ -82,8 +125,10 @@ plugin_iface_init (gpointer g_iface,
   iface->name = "Ytstenut plugin";
   iface->version = PACKAGE_VERSION;
 
-  iface->initialize = initialize;
-  iface->create_channel_managers = create_channel_managers;
+  iface->sidecar_interfaces = sidecar_interfaces;
+  iface->create_sidecar = ytstenut_plugin_create_sidecar;
+  iface->initialize = ytstenut_plugin_initialize;
+  iface->create_channel_managers = ytstenut_plugin_create_channel_managers;
 }
 
 SalutPlugin *
