@@ -33,7 +33,7 @@
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
 
 static const gchar * const sidecar_interfaces[] = {
-    YTSTENUT_IFACE_STATUS,
+  YTSTENUT_IFACE_STATUS,
   NULL
 };
 

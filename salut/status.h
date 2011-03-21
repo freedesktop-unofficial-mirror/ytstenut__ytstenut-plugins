@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef __YTST_STATUS_H__
-#define __YTST_STATUS_H__
+#ifndef YTST_STATUS_H
+#define YTST_STATUS_H
 
 #include <glib-object.h>
 
@@ -59,4 +59,4 @@ YtstStatus* ytst_status_new (void);
 
 G_END_DECLS
 
-#endif /* #ifndef __YTST_STATUS_H__*/
+#endif /* #ifndef YTST_STATUS_H*/
