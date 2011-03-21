@@ -73,8 +73,7 @@ create_channel_managers (SalutPlugin *plugin,
 }
 
 static void
-plugin_iface_init (
-    gpointer g_iface,
+plugin_iface_init (gpointer g_iface,
     gpointer data G_GNUC_UNUSED)
 {
   SalutPluginInterface *iface = g_iface;
