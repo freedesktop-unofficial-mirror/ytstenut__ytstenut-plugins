@@ -1,2 +1,2 @@
 
-SUBDIRS = salut
+SUBDIRS = mission-control salut

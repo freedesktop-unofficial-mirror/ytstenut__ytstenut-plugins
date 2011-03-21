@@ -10,8 +10,46 @@ AM_PROG_CC_STDC
 AC_HEADER_STDC
 AC_PROG_LIBTOOL
 
+GETTEXT_PACKAGE=AC_PACKAGE_NAME
+AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [The name of the gettext package.])
+AC_SUBST(GETTEXT_PACKAGE)
+AM_GLIB_GNU_GETTEXT
+
+PKG_CHECK_MODULES(TELEPATHY_GLIB, telepathy-glib)
+AC_SUBST(TELEPATHY_GLIB_CFLAGS)
+AC_SUBST(TELEPATHY_GLIB_LIBS)
+
+PKG_CHECK_MODULES(TELEPATHY_YTSTENUT, [telepathy-ytstenut-glib])
+AC_SUBST(TELEPATHY_YTSTENUT_CFLAGS)
+AC_SUBST(TELEPATHY_YTSTENUT_LIBS)
+
 # ------------------------------------------------------------------------------
-# salut
+# MISSION CONTROL PLUGIN
+
+PKG_CHECK_MODULES(MISSION_CONTROL_MODULE, mission-control-plugins >= 5.5.4)
+
+AC_ARG_WITH([mission-control-plugins-dir],
+	[AC_HELP_STRING([--with-mission-control-plugins-dir],
+		[directory to install mission-control plugins])],
+		[with_mc_plugins_dir=$withval], [with_mc_plugins_dir=""])
+
+if test -z "$with_mc_plugins_dir"; then
+	AC_MSG_CHECKING([Mission Control plugins dir])
+	MISSION_CONTROL_PLUGINS_DIR=`pkg-config --variable=plugindir mission-control-plugins`
+else
+	MISSION_CONTROL_PLUGINS_DIR="$with_bisho_modules_dir"
+fi
+
+if test "x$MISSION_CONTROL_PLUGINS_DIR" = "x"; then
+	AC_MSG_ERROR([could not determine plugindir])
+else
+	AC_MSG_RESULT([$MISSION_CONTROL_PLUGINS_DIR])
+fi
+AC_SUBST(MISSION_CONTROL_PLUGINS_DIR)
+
+
+# ------------------------------------------------------------------------------
+# SALUT PLUGIN
 
 PKG_CHECK_MODULES(SALUT, telepathy-salut)
 AC_SUBST(SALUT_LIBS)
@@ -43,4 +81,5 @@ AC_SUBST(CFLAGS)
 AC_OUTPUT([
 	Makefile
 	salut/Makefile
+	mission-control/Makefile
 ])
