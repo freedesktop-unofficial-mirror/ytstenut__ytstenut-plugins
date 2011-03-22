@@ -78,6 +78,8 @@ static const Parameter account_parameters[] = {
     { "ConnectAutomatically", "true" },
     { "Hidden", "true" },
     { "Enabled", "true" },
+
+    { "param-account", "automatic" },
 };
 
 static const Parameter account_translated_parameters[] = {
