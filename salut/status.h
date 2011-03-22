@@ -32,6 +32,8 @@ typedef struct _YtstStatusPrivate YtstStatusPrivate;
 
 struct _YtstStatusClass {
   GObjectClass parent_class;
+
+  TpDBusPropertiesMixinClass dbus_props_class;
 };
 
 struct _YtstStatus {

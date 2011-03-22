@@ -24,6 +24,8 @@
 
 #include <salut/plugin.h>
 
+#include <telepathy-glib/svc-generic.h>
+
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
 #define DEBUG(msg, ...) \
@@ -36,6 +38,8 @@ static void ytst_status_iface_init (YtstenutSvcStatusClass *iface);
 G_DEFINE_TYPE_WITH_CODE (YtstStatus, ytst_status, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (SALUT_TYPE_SIDECAR, sidecar_iface_init);
     G_IMPLEMENT_INTERFACE (YTSTENUT_TYPE_SVC_STATUS, ytst_status_iface_init);
+    G_IMPLEMENT_INTERFACE (TP_TYPE_SVC_DBUS_PROPERTIES,
+      tp_dbus_properties_mixin_iface_init);
 );
 
 /* properties */
@@ -190,6 +194,9 @@ ytst_status_class_init (YtstStatusClass *klass)
       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_DISCOVERED_SERVICES,
       param_spec);
+
+  tp_dbus_properties_mixin_class_init (object_class,
+      G_STRUCT_OFFSET (YtstStatusClass, dbus_props_class));
 
   tp_dbus_properties_mixin_implement_interface (object_class,
       YTSTENUT_IFACE_QUARK_STATUS,
