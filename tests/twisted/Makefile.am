@@ -45,6 +45,8 @@ COMBINED_TESTS_ENVIRONMENT = \
 	$(BASIC_TESTS_ENVIRONMENT) \
 	$(PYTHON)
 
+check-local: check-twisted
+
 check-twisted:
 	$(MAKE) -C tools
 	rm -f tools/core
