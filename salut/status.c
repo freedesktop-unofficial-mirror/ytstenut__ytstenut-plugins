@@ -42,6 +42,7 @@ G_DEFINE_TYPE_WITH_CODE (YtstStatus, ytst_status, G_TYPE_OBJECT,
 enum
 {
   PROP_DISCOVERED_STATUSES,
+  PROP_DISCOVERED_SERVICES,
   LAST_PROPERTY
 };
 
@@ -82,6 +83,9 @@ ytst_status_get_property (GObject *object,
   switch (property_id)
     {
       case PROP_DISCOVERED_STATUSES:
+        g_assert_not_reached (); /* TODO: Implement */
+        break;
+      case PROP_DISCOVERED_SERVICES:
         g_assert_not_reached (); /* TODO: Implement */
         break;
       default:
@@ -157,6 +161,7 @@ ytst_status_class_init (YtstStatusClass *klass)
 
   static TpDBusPropertiesMixinPropImpl ytstenut_props[] = {
       { "DiscoveredStatuses", "discovered-statuses", NULL },
+      { "DiscoveredServices", "discovered-services", NULL },
       { NULL }
   };
 
@@ -175,6 +180,15 @@ ytst_status_class_init (YtstStatusClass *klass)
       YTSTENUT_HASH_TYPE_CONTACT_CAPABILITY_MAP,
       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_DISCOVERED_STATUSES,
+      param_spec);
+
+  param_spec = g_param_spec_boxed (
+      "discovered-services",
+      "Discovered Services",
+      "Discovered Ytstenut services",
+      YTSTENUT_HASH_TYPE_SERVICE_MAP,
+      G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
+  g_object_class_install_property (object_class, PROP_DISCOVERED_SERVICES,
       param_spec);
 
   tp_dbus_properties_mixin_implement_interface (object_class,
