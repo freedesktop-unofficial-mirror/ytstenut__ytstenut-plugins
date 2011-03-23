@@ -1,6 +1,7 @@
 /*
  * ytstenut.h - Header for YstPlugin
- * Copyright (C) 2011 Collabora Ltd.
+ *
+ * Copyright (C) 2011 Intel Corp.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
