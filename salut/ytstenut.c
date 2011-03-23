@@ -34,7 +34,7 @@
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
 
 static const gchar * const sidecar_interfaces[] = {
-  YTSTENUT_IFACE_STATUS,
+  TP_YTS_IFACE_STATUS,
   NULL
 };
 
@@ -85,10 +85,10 @@ ytstenut_plugin_create_sidecar (
       salut_plugin_create_sidecar_async);
   SalutSidecar *sidecar = NULL;
 
-  if (!tp_strdiff (sidecar_interface, YTSTENUT_IFACE_STATUS))
+  if (!tp_strdiff (sidecar_interface, TP_YTS_IFACE_STATUS))
     {
       sidecar = SALUT_SIDECAR (ytst_status_new ());
-      DEBUG ("created side car for: %s", YTSTENUT_IFACE_STATUS);
+      DEBUG ("created side car for: %s", TP_YTS_IFACE_STATUS);
     }
   else
     {

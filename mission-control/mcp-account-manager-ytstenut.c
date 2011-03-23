@@ -91,7 +91,7 @@ static void mcp_account_manager_ytstenut_account_storage_iface_init (
     McpAccountStorageIface *iface, gpointer iface_data);
 
 static void mcp_account_manager_ytstenut_account_manager_iface_init (
-    YtstenutSvcAccountManagerClass *iface, gpointer iface_data);
+    TpYtsSvcAccountManagerClass *iface, gpointer iface_data);
 
 static void account_manager_hold (McpAccountManagerYtstenut *self,
     const gchar *client);
@@ -103,7 +103,7 @@ G_DEFINE_TYPE_WITH_CODE (McpAccountManagerYtstenut,
     mcp_account_manager_ytstenut, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (MCP_TYPE_ACCOUNT_STORAGE,
         mcp_account_manager_ytstenut_account_storage_iface_init);
-    G_IMPLEMENT_INTERFACE (YTSTENUT_TYPE_SVC_ACCOUNT_MANAGER,
+    G_IMPLEMENT_INTERFACE (TP_TYPE_YTS_SVC_ACCOUNT_MANAGER,
         mcp_account_manager_ytstenut_account_manager_iface_init);
 );
 
@@ -397,7 +397,7 @@ mcp_account_manager_ytstenut_class_init (McpAccountManagerYtstenutClass *klass)
   };
 
   static TpDBusPropertiesMixinIfaceImpl prop_interfaces[] = {
-      { YTSTENUT_IFACE_ACCOUNT_MANAGER,
+      { TP_YTS_IFACE_ACCOUNT_MANAGER,
         tp_dbus_properties_mixin_getter_gobject_properties,
         NULL,
         account_manager_props,
@@ -538,7 +538,7 @@ mcp_account_manager_ytstenut_account_storage_iface_init (
 }
 
 static void
-mcp_account_manager_ytstenut_hold (YtstenutSvcAccountManager *manager,
+mcp_account_manager_ytstenut_hold (TpYtsSvcAccountManager *manager,
     DBusGMethodInvocation *context)
 {
   McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (manager);
@@ -548,11 +548,11 @@ mcp_account_manager_ytstenut_hold (YtstenutSvcAccountManager *manager,
   g_return_if_fail (client);
 
   account_manager_hold (self, client);
-  ytstenut_svc_account_manager_return_from_hold (context);
+  tp_yts_svc_account_manager_return_from_hold (context);
 }
 
 static void
-mcp_account_manager_ytstenut_release (YtstenutSvcAccountManager *manager,
+mcp_account_manager_ytstenut_release (TpYtsSvcAccountManager *manager,
     DBusGMethodInvocation *context)
 {
   McpAccountManagerYtstenut *self = MCP_ACCOUNT_MANAGER_YTSTENUT (manager);
@@ -577,14 +577,14 @@ mcp_account_manager_ytstenut_release (YtstenutSvcAccountManager *manager,
       g_error_free (error);
     }
 
-  ytstenut_svc_account_manager_return_from_release (context);
+  tp_yts_svc_account_manager_return_from_release (context);
 }
 
 static void
 mcp_account_manager_ytstenut_account_manager_iface_init (
-    YtstenutSvcAccountManagerClass *iface, gpointer iface_data)
+    TpYtsSvcAccountManagerClass *iface, gpointer iface_data)
 {
-#define IMPLEMENT(x) ytstenut_svc_account_manager_implement_##x (\
+#define IMPLEMENT(x) tp_yts_svc_account_manager_implement_##x (\
     iface, mcp_account_manager_ytstenut_##x)
   IMPLEMENT(hold);
   IMPLEMENT(release);

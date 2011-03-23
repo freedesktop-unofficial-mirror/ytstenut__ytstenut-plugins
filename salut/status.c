@@ -34,11 +34,11 @@
 
 static void sidecar_iface_init (SalutSidecarInterface *iface);
 
-static void ytst_status_iface_init (YtstenutSvcStatusClass *iface);
+static void ytst_status_iface_init (TpYtsSvcStatusClass *iface);
 
 G_DEFINE_TYPE_WITH_CODE (YtstStatus, ytst_status, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (SALUT_TYPE_SIDECAR, sidecar_iface_init);
-    G_IMPLEMENT_INTERFACE (YTSTENUT_TYPE_SVC_STATUS, ytst_status_iface_init);
+    G_IMPLEMENT_INTERFACE (TP_TYPE_YTS_SVC_STATUS, ytst_status_iface_init);
     G_IMPLEMENT_INTERFACE (TP_TYPE_SVC_DBUS_PROPERTIES,
       tp_dbus_properties_mixin_iface_init);
 );
@@ -182,7 +182,7 @@ ytst_status_class_init (YtstStatusClass *klass)
       "discovered-statuses",
       "Discovered Statuses",
       "Discovered Ytstenut statuses",
-      YTSTENUT_HASH_TYPE_CONTACT_CAPABILITY_MAP,
+      TP_YTS_HASH_TYPE_CONTACT_CAPABILITY_MAP,
       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_DISCOVERED_STATUSES,
       param_spec);
@@ -191,7 +191,7 @@ ytst_status_class_init (YtstStatusClass *klass)
       "discovered-services",
       "Discovered Services",
       "Discovered Ytstenut services",
-      YTSTENUT_HASH_TYPE_SERVICE_MAP,
+      TP_YTS_HASH_TYPE_SERVICE_MAP,
       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_DISCOVERED_SERVICES,
       param_spec);
@@ -200,13 +200,13 @@ ytst_status_class_init (YtstStatusClass *klass)
       G_STRUCT_OFFSET (YtstStatusClass, dbus_props_class));
 
   tp_dbus_properties_mixin_implement_interface (object_class,
-      YTSTENUT_IFACE_QUARK_STATUS,
+      TP_YTS_IFACE_QUARK_STATUS,
       tp_dbus_properties_mixin_getter_gobject_properties, NULL,
       ytstenut_props);
 }
 
 static void
-ytst_status_advertise_status (YtstenutSvcStatus *self,
+ytst_status_advertise_status (TpYtsSvcStatus *self,
     const gchar *capability,
     const gchar *service_name,
     const gchar *status,
@@ -214,13 +214,13 @@ ytst_status_advertise_status (YtstenutSvcStatus *self,
 {
   /* TODO: Implement */
 
-  ytstenut_svc_status_return_from_advertise_status (context);
+  tp_yts_svc_status_return_from_advertise_status (context);
 }
 
 static void
-ytst_status_iface_init (YtstenutSvcStatusClass *iface)
+ytst_status_iface_init (TpYtsSvcStatusClass *iface)
 {
-#define IMPLEMENT(x) ytstenut_svc_status_implement_##x (\
+#define IMPLEMENT(x) tp_yts_svc_status_implement_##x (\
     iface, ytst_status_##x)
   IMPLEMENT(advertise_status);
 #undef IMPLEMENT
@@ -229,7 +229,7 @@ ytst_status_iface_init (YtstenutSvcStatusClass *iface)
 static void
 sidecar_iface_init (SalutSidecarInterface *iface)
 {
-  iface->interface = YTSTENUT_IFACE_STATUS;
+  iface->interface = TP_YTS_IFACE_STATUS;
   iface->get_immutable_properties = NULL;
 }
 
