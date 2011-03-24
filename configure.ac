@@ -26,7 +26,7 @@ AC_SUBST(TELEPATHY_YTSTENUT_LIBS)
 # ------------------------------------------------------------------------------
 # MISSION CONTROL PLUGIN
 
-PKG_CHECK_MODULES(MISSION_CONTROL_MODULE, mission-control-plugins >= 5.7.5)
+PKG_CHECK_MODULES(MISSION_CONTROL_MODULE, mission-control-plugins >= 5.7.7+)
 
 AC_ARG_WITH([mission-control-plugins-dir],
 	[AC_HELP_STRING([--with-mission-control-plugins-dir],
