@@ -191,7 +191,7 @@ ytst_status_class_init (YtstStatusClass *klass)
       "discovered-services",
       "Discovered Services",
       "Discovered Ytstenut services",
-      TP_YTS_HASH_TYPE_SERVICE_MAP,
+      TP_YTS_HASH_TYPE_CONTACT_SERVICE_MAP,
       G_PARAM_READABLE | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_DISCOVERED_SERVICES,
       param_spec);
