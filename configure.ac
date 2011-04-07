@@ -89,7 +89,7 @@ else
 	AC_MSG_RESULT(no)
 fi
 
-CFLAGS="$CFLAGS -Wall -Wextra -Wno-missing-field-initializers \
+CFLAGS="$CFLAGS -Werror -Wall -Wextra -Wno-missing-field-initializers \
 	-Wno-unused-parameter -Wdeclaration-after-statement -Wshadow \
 	-Wmissing-prototypes -Wmissing-declarations"
 
