@@ -54,6 +54,18 @@ enum
 /* private structure */
 struct _YtstStatusPrivate
 {
+  /* GHashTable<gchar*,
+   *     GHashTable<gchar*,
+   *         GHashTable<gchar*,gchar*>>>
+   */
+  GHashTable *discovered_statuses;
+
+  /* GHashTable<gchar*,
+   *     GHashTable<gchar*,
+   *         GValueArray(gchar*,GHashTable<gchar*,gchar*>,GPtrArray<gchar*>)>>
+   */
+  GHashTable *discovered_services;
+
   gboolean dispose_has_run;
 };
 
@@ -80,18 +92,16 @@ ytst_status_get_property (GObject *object,
     GValue *value,
     GParamSpec *pspec)
 {
-#if 0
   YtstStatus *self = YTST_STATUS (object);
   YtstStatusPrivate *priv = self->priv;
-#endif
 
   switch (property_id)
     {
       case PROP_DISCOVERED_STATUSES:
-        g_assert_not_reached (); /* TODO: Implement */
+        g_value_set_boxed (value, priv->discovered_statuses);
         break;
       case PROP_DISCOVERED_SERVICES:
-        g_assert_not_reached (); /* TODO: Implement */
+        g_value_set_boxed (value, priv->discovered_services);
         break;
       default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -121,10 +131,14 @@ ytst_status_set_property (GObject *object,
 static void
 ytst_status_constructed (GObject *object)
 {
-#if 0
   YtstStatus *self = YTST_STATUS (object);
   YtstStatusPrivate *priv = self->priv;
-#endif
+
+  priv->discovered_statuses = g_hash_table_new_full (g_str_hash, g_str_equal,
+      g_free, (GDestroyNotify) g_hash_table_unref);
+
+  priv->discovered_services = g_hash_table_new_full (g_str_hash, g_str_equal,
+      g_free, (GDestroyNotify) g_hash_table_unref);
 }
 
 static void
@@ -139,6 +153,9 @@ ytst_status_dispose (GObject *object)
   priv->dispose_has_run = TRUE;
 
   /* release any references held by the object here */
+
+  tp_clear_pointer (&priv->discovered_statuses, g_hash_table_unref);
+  tp_clear_pointer (&priv->discovered_services, g_hash_table_unref);
 
   if (G_OBJECT_CLASS (ytst_status_parent_class)->dispose)
     G_OBJECT_CLASS (ytst_status_parent_class)->dispose (object);
