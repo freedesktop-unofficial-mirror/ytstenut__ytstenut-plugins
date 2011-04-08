@@ -25,8 +25,8 @@ import base64
 import os
 import sys
 
-import constants as cs
-import servicetest
+import mcconstants as cs
+import mcservicetest as servicetest
 import twisted
 from twisted.internet import reactor
 

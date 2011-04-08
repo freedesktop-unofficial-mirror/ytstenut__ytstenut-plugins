@@ -21,14 +21,11 @@ import dbus
 import dbus
 import dbus.service
 
-from servicetest import assertContains, assertEquals, assertSameSets
-from servicetest import unwrap, ProxyWrapper, EventPattern, TimeoutError
+from mcservicetest import assertContains, assertEquals, assertSameSets
+from mcservicetest import unwrap, ProxyWrapper, EventPattern, TimeoutError
 from mctest import exec_test, create_fakecm_account
-import constants as cs
-
-YTST_ACCOUNT_MANAGER_PATH = "/com/meego/xpmn/ytstenut/AccountManager"
-YTST_ACCOUNT_MANAGER_IFACE = "com.meego.xpmn.ytstenut.AccountManager"
-YTST_ACCOUNT_PATH = "/org/freedesktop/Telepathy/Account/salut/local_ytstenut/automatic_account"
+import mcconstants as cs
+from yconstants import *
 
 def is_account_going_online(event):
     presence = event.args[0].get("RequestedPresence")

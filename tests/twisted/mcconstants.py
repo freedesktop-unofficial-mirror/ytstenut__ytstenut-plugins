@@ -21,7 +21,7 @@ Some handy constants for other tests to share and enjoy.
 """
 
 from dbus import PROPERTIES_IFACE, INTROSPECTABLE_IFACE
-from servicetest import tp_name_prefix, tp_path_prefix
+from mcservicetest import tp_name_prefix, tp_path_prefix
 
 CM = "org.freedesktop.Telepathy.ConnectionManager"
 

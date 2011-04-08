@@ -1,7 +1,8 @@
 TWISTED_TESTS =
 
 TWISTED_BASIC_TESTS = \
-	ytstenut/account.py
+	ytstenut/account.py \
+	ytstenut/sidecar.py
 
 config.py: Makefile
 	$(AM_V_GEN) { \
@@ -35,11 +36,12 @@ BASIC_TESTS_ENVIRONMENT = \
 	XDG_DATA_DIRS=@abs_top_srcdir@/tests/twisted \
 	XDG_CACHE_DIR=@abs_top_builddir@/tests/twisted/tmp-$(TMPSUFFIX) \
 	XDG_CACHE_HOME=@abs_top_builddir@/tests/twisted/tmp-$(TMPSUFFIX) \
-	G_DEBUG=fatal_criticals
+	G_DEBUG=fatal_criticals \
+	SALUT_PLUGIN_DIR=@abs_top_builddir@/salut/.libs
 
 WITH_SESSION_BUS = \
 	sh $(srcdir)/tools/with-session-bus.sh \
-	--config-file=tools/tmp-session-bus.conf --
+	--also-for-system --config-file=tools/tmp-session-bus.conf --
 
 COMBINED_TESTS_ENVIRONMENT = \
 	$(BASIC_TESTS_ENVIRONMENT) \
@@ -117,11 +119,17 @@ EXTRA_DIST = \
 	telepathy/managers/fakecm.manager \
 	telepathy/managers/onewitheverything.manager \
 	telepathy/managers/README \
-	constants.py \
+	mcconstants.py \
         fakeclient.py \
         fakecm.py \
 	mctest.py \
-	servicetest.py
+	mcservicetest.py \
+	salutconstants.py \
+	saluttest.py \
+	salutservicetest.py \
+	avahimock.py \
+	ns.py \
+	yconstants.py
 
 CLEANFILES = \
 	accounts/accounts.cfg \
