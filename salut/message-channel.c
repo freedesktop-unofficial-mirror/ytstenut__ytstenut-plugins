@@ -239,6 +239,8 @@ channel_message_stanza_callback (GObject *source_object,
       g_hash_table_destroy (attributes);
       g_free (body);
     }
+
+  g_object_unref (self);
 }
 
 static void
@@ -537,7 +539,7 @@ ytst_message_channel_request (TpYtsSvcChannel *channel,
 
   wocky_porter_send_iq_async (wocky_session_get_porter (session),
       priv->request, priv->cancellable,
-      channel_message_stanza_callback, self);
+      channel_message_stanza_callback, g_object_ref (self));
   priv->requested = TRUE;
 
   tp_yts_svc_channel_return_from_request (context);

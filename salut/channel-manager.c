@@ -153,6 +153,7 @@ manager_close_all (YtstChannelManager *self)
   if (priv->channels != NULL)
     {
       DEBUG ("closing channels");
+      g_queue_foreach (priv->channels, (GFunc) tp_base_channel_close, NULL);
       g_queue_foreach (priv->channels, (GFunc) g_object_unref, NULL);
       g_queue_free (priv->channels);
       priv->channels = NULL;
