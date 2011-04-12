@@ -554,6 +554,14 @@ ytst_message_channel_request (TpYtsSvcChannel *channel,
   WockySession *session;
   GError *error = NULL;
 
+  /* Can't call this method from this side */
+  if (!tp_base_channel_is_requested (TP_BASE_CHANNEL (channel)))
+    {
+      g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+          "Request() may not be called on the request side of a channel");
+      goto done;
+    }
+
   if (priv->requested)
     {
       g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
@@ -571,7 +579,16 @@ ytst_message_channel_request (TpYtsSvcChannel *channel,
       channel_message_stanza_callback, g_object_ref (self));
   priv->requested = TRUE;
 
-  tp_yts_svc_channel_return_from_request (context);
+done:
+  if (error != NULL)
+    {
+      dbus_g_method_return_error (context, error);
+      g_clear_error (&error);
+    }
+  else
+    {
+      tp_yts_svc_channel_return_from_request (context);
+    }
 }
 
 static void
