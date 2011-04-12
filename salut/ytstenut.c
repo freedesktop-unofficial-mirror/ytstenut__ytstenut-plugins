@@ -24,6 +24,7 @@
 
 #include "caps-manager.h"
 #include "status.h"
+#include "channel-manager.h"
 
 #include <salut/plugin.h>
 #include <salut/protocol.h>
@@ -112,6 +113,8 @@ ytstenut_plugin_create_channel_managers (SalutPlugin *plugin,
   DEBUG ("%p on connection %p", plugin, connection);
 
   g_ptr_array_add (ret, g_object_new (YTST_TYPE_CAPS_MANAGER, NULL));
+  g_ptr_array_add (ret, ytst_channel_manager_new (
+          SALUT_CONNECTION (connection)));
 
   return ret;
 }
