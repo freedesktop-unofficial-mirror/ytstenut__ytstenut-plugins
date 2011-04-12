@@ -215,7 +215,7 @@ channel_message_stanza_callback (GObject *source_object,
     {
       DEBUG ("Failed to send IQ: %s", error->message);
       g_clear_error (&error);
-      return;
+      goto out;
     }
 
   priv->replied = TRUE;
@@ -240,6 +240,7 @@ channel_message_stanza_callback (GObject *source_object,
       g_free (body);
     }
 
+out:
   g_object_unref (self);
 }
 
