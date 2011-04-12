@@ -425,10 +425,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   request = ytst_message_channel_build_request (request_properties,
       salut_connection_get_name (priv->connection), contact, &error);
   if (request == NULL)
-    {
-      g_object_unref (contact);
-      goto error;
-    }
+    goto error;
 
   channel = ytst_message_channel_new (priv->connection, contact, request, handle,
       base_conn->self_handle);
