@@ -560,7 +560,7 @@ ytst_message_channel_reply (TpYtsSvcChannel *channel,
   GError *error = NULL;
 
   /* Can't call this method from this side */
-  if (tp_channel_get_requested (TP_CHANNEL (channel)))
+  if (tp_base_channel_is_requested (TP_BASE_CHANNEL (channel)))
     {
       g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
           "Reply() may not be called on the request side of a channel");
@@ -629,7 +629,7 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
   WockyStanza *reply;
 
   /* Can't call this method from this side */
-  if (tp_channel_get_requested (TP_CHANNEL (channel)))
+  if (tp_base_channel_is_requested (TP_BASE_CHANNEL (channel)))
     {
       g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
           "Fail() may not be called on the request side of a channel");
