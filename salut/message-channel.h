@@ -65,7 +65,8 @@ YtstMessageChannel* ytst_message_channel_new (SalutConnection *connection,
     WockyLLContact *contact,
     WockyStanza *request,
     TpHandle handle,
-    TpHandle initiator);
+    TpHandle initiator,
+    gboolean requested);
 
 gboolean ytst_message_channel_is_ytstenut_request_with_id (
     WockyStanza *stanza, gchar **id);

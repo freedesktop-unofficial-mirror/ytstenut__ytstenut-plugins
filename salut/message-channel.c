@@ -750,7 +750,8 @@ ytst_message_channel_new (SalutConnection *connection,
     WockyLLContact *contact,
     WockyStanza *request,
     TpHandle handle,
-    TpHandle initiator)
+    TpHandle initiator,
+    gboolean requested)
 {
   TpBaseConnection *base_conn;
   YtstMessageChannel *channel;
@@ -766,7 +767,7 @@ ytst_message_channel_new (SalutConnection *connection,
       "contact", contact,
       "request", request,
       "handle", handle,
-      "requested", initiator == base_conn->self_handle,
+      "requested", requested,
       "initiator-handle", initiator,
       NULL);
 
