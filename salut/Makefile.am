@@ -19,4 +19,10 @@ ytstenut_salut_la_SOURCES = \
 	caps-manager.c \
 	caps-manager.h \
 	status.c \
-	status.h
+	status.h \
+	message-channel.c \
+	message-channel.h \
+	channel-manager.c \
+	channel-manager.h \
+	util.c \
+	util.h
