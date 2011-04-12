@@ -72,8 +72,7 @@ static const gchar *ytst_message_channel_interfaces[] = {
 /* properties */
 enum
 {
-  PROP_CONNECTION = 1,
-  PROP_CONTACT,
+  PROP_CONTACT = 1,
   PROP_TARGET_SERVICE,
   PROP_INITIATOR_SERVICE,
   PROP_REQUEST,
@@ -87,7 +86,6 @@ enum
 struct _YtstMessageChannelPrivate
 {
   gboolean dispose_has_run;
-  SalutConnection *connection;
   WockyLLContact *contact;
 
   GCancellable *cancellable;
@@ -346,9 +344,6 @@ ytst_message_channel_get_property (GObject *object,
 
   switch (property_id)
     {
-      case PROP_CONNECTION:
-        g_value_set_object (value, priv->connection);
-        break;
       case PROP_CONTACT:
         g_value_set_object (value, priv->contact);
         break;
@@ -390,9 +385,6 @@ ytst_message_channel_set_property (GObject *object,
 
   switch (property_id)
     {
-      case PROP_CONNECTION:
-        priv->connection = g_value_get_object (value);
-        break;
       case PROP_CONTACT:
         priv->contact = g_value_dup_object (value);
         break;
@@ -438,8 +430,6 @@ ytst_message_channel_dispose (GObject *object)
       priv->request = NULL;
     }
 
-  priv->connection = NULL;
-
   if (G_OBJECT_CLASS (ytst_message_channel_parent_class)->dispose)
     G_OBJECT_CLASS (ytst_message_channel_parent_class)->dispose (object);
 }
@@ -471,14 +461,6 @@ ytst_message_channel_class_init (YtstMessageChannelClass *klass)
   base_class->interfaces = ytst_message_channel_interfaces;
   base_class->target_handle_type = TP_HANDLE_TYPE_CONTACT;
   base_class->close = ytst_message_channel_close;
-
-  param_spec = g_param_spec_object (
-      "connection",
-      "SalutConnection object",
-      "SalutConnection to which this channel is on",
-      SALUT_TYPE_CONNECTION,
-      G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
-  g_object_class_install_property (object_class, PROP_CONNECTION, param_spec);
 
   param_spec = g_param_spec_object (
       "contact",
@@ -550,7 +532,8 @@ ytst_message_channel_request (TpYtsSvcChannel *channel,
       return;
     }
 
-  session = salut_connection_get_session (priv->connection);
+  session = salut_connection_get_session (SALUT_CONNECTION (
+          tp_base_channel_get_connection (TP_BASE_CHANNEL (self))));
 
   wocky_porter_send_iq_async (wocky_session_get_porter (session),
       priv->request, priv->cancellable,
@@ -568,7 +551,9 @@ ytst_message_channel_reply (TpYtsSvcChannel *channel,
 {
   YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (channel);
   YtstMessageChannelPrivate *priv = self->priv;
-  WockySession *session = salut_connection_get_session (priv->connection);
+  SalutConnection *conn = SALUT_CONNECTION (tp_base_channel_get_connection (
+          TP_BASE_CHANNEL (self)));
+  WockySession *session = salut_connection_get_session (conn);
   WockyNodeTree *body_tree = NULL;
   WockyNode *msg_node;
   WockyStanza *reply;
@@ -638,7 +623,9 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
   YtstMessageChannelPrivate *priv = self->priv;
   const gchar *type;
   GError *error = NULL;
-  WockySession *session = salut_connection_get_session (priv->connection);
+  SalutConnection *conn = SALUT_CONNECTION (tp_base_channel_get_connection (
+          TP_BASE_CHANNEL (self)));
+  WockySession *session = salut_connection_get_session (conn);
   WockyStanza *reply;
 
   /* Can't call this method from this side */
