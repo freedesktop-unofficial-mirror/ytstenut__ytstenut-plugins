@@ -32,6 +32,8 @@
 #include <telepathy-glib/interfaces.h>
 #include <telepathy-glib/util.h>
 
+#include <salut/caps-channel-manager.h>
+
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
 #define DEBUG(msg, ...) \
@@ -39,10 +41,14 @@
 
 static void ytst_channel_manager_iface_init (gpointer g_iface,
     gpointer iface_data);
+static void ytst_caps_channel_manager_iface_init (gpointer g_iface,
+    gpointer iface_data);
 
 G_DEFINE_TYPE_WITH_CODE (YtstChannelManager, ytst_channel_manager, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (TP_TYPE_CHANNEL_MANAGER,
-      ytst_channel_manager_iface_init);
+        ytst_channel_manager_iface_init);
+    G_IMPLEMENT_INTERFACE (GABBLE_TYPE_CAPS_CHANNEL_MANAGER,
+        ytst_caps_channel_manager_iface_init);
 );
 
 /* properties */
@@ -462,6 +468,18 @@ ytst_channel_manager_iface_init (gpointer g_iface,
   iface->create_channel = ytst_channel_manager_create_channel;
   iface->request_channel = ytst_channel_manager_create_channel;
   iface->ensure_channel = ytst_channel_manager_create_channel;
+}
+
+static void
+ytst_caps_channel_manager_iface_init (gpointer g_iface,
+    gpointer iface_data)
+{
+  GabbleCapsChannelManagerIface *iface = g_iface;
+
+  /* we don't need any of these */
+  iface->reset_caps = NULL;
+  iface->get_contact_caps = NULL;
+  iface->represent_client = NULL;
 }
 
 /* public functions */
