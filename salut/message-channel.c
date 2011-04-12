@@ -56,8 +56,6 @@
 
 #define EL_YTSTENUT_MESSAGE "message"
 
-static guint channel_number = 1;
-
 static void channel_ytstenut_iface_init (gpointer g_iface,
     gpointer iface_data);
 
@@ -720,7 +718,6 @@ ytst_message_channel_new (SalutConnection *connection,
     TpHandle initiator)
 {
   TpBaseConnection *base_conn;
-  gchar *path;
   YtstMessageChannel *channel;
 
   g_return_val_if_fail (SALUT_IS_CONNECTION (connection), NULL);
@@ -729,21 +726,16 @@ ytst_message_channel_new (SalutConnection *connection,
 
   base_conn = TP_BASE_CONNECTION (connection);
 
-  path = g_strdup_printf ("%s/YtstenutChannel%u",
-      base_conn->object_path, channel_number++);
-
   channel = g_object_new (YTST_TYPE_MESSAGE_CHANNEL,
       "connection", connection,
       "contact", contact,
       "request", request,
       "handle", handle,
-      "object-path", path,
       "initiator-handle", initiator,
       NULL);
 
   tp_base_channel_register (TP_BASE_CHANNEL (channel));
 
-  g_free (path);
   return channel;
 }
 
