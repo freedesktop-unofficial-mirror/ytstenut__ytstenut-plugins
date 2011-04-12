@@ -326,6 +326,32 @@ ytst_message_channel_close (TpBaseChannel *chan)
   tp_base_channel_destroyed (chan);
 }
 
+static gchar *
+ytst_message_channel_get_path (TpBaseChannel *chan)
+{
+  return g_strdup_printf ("YtstenutChannel/%p", chan);
+}
+
+static void
+ytst_message_channel_fill_immutable_properties (
+    TpBaseChannel *chan,
+    GHashTable *properties)
+{
+  TpBaseChannelClass *klass = TP_BASE_CHANNEL_CLASS (
+      ytst_message_channel_parent_class);
+
+  klass->fill_immutable_properties (chan, properties);
+
+  tp_dbus_properties_mixin_fill_properties_hash (
+      G_OBJECT (chan), properties,
+      TP_YTS_IFACE_CHANNEL, "RequestType",
+      TP_YTS_IFACE_CHANNEL, "RequestAttributes",
+      TP_YTS_IFACE_CHANNEL, "RequestBody",
+      TP_YTS_IFACE_CHANNEL, "TargetService",
+      TP_YTS_IFACE_CHANNEL, "InitiatorService",
+      NULL);
+}
+
 static void
 ytst_message_channel_init (YtstMessageChannel *self)
 {
@@ -463,6 +489,9 @@ ytst_message_channel_class_init (YtstMessageChannelClass *klass)
   base_class->interfaces = ytst_message_channel_interfaces;
   base_class->target_handle_type = TP_HANDLE_TYPE_CONTACT;
   base_class->close = ytst_message_channel_close;
+  base_class->get_object_path_suffix = ytst_message_channel_get_path;
+  base_class->fill_immutable_properties =
+    ytst_message_channel_fill_immutable_properties;
 
   param_spec = g_param_spec_object (
       "contact",

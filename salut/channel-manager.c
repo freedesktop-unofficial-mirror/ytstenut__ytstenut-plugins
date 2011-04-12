@@ -344,8 +344,11 @@ static const gchar * const channel_fixed_properties[] = {
 static const gchar * const channel_allowed_properties[] = {
     TP_IFACE_CHANNEL ".TargetHandle",
     TP_IFACE_CHANNEL ".TargetID",
-    TP_YTS_IFACE_CHANNEL ".RequestBody",
+    TP_YTS_IFACE_CHANNEL ".RequestType",
     TP_YTS_IFACE_CHANNEL ".RequestAttributes",
+    TP_YTS_IFACE_CHANNEL ".RequestBody",
+    TP_YTS_IFACE_CHANNEL ".TargetService",
+    TP_YTS_IFACE_CHANNEL ".InitiatorService",
     NULL
 };
 
