@@ -57,7 +57,6 @@ GType ytst_channel_manager_get_type (void);
   (G_TYPE_INSTANCE_GET_CLASS ((obj), YTST_TYPE_CHANNEL_MANAGER, \
                               YtstChannelManagerClass))
 
-YtstChannelManager *
-ytst_channel_manager_new (SalutConnection *connection);
+YtstChannelManager * ytst_channel_manager_new (SalutConnection *connection);
 
 #endif /* #ifndef __YTST_CHANNEL_MANAGER_H__*/
