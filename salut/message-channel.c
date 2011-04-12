@@ -718,6 +718,7 @@ ytst_message_channel_new (SalutConnection *connection,
       "contact", contact,
       "request", request,
       "handle", handle,
+      "requested", initiator == base_conn->self_handle,
       "initiator-handle", initiator,
       NULL);
 
