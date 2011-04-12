@@ -559,7 +559,7 @@ ytst_message_channel_request (TpYtsSvcChannel *channel,
   if (!tp_base_channel_is_requested (TP_BASE_CHANNEL (channel)))
     {
       g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
-          "Request() may not be called on the request side of a channel");
+          "Request() may not be called on the reply side of a channel");
       goto done;
     }
 
