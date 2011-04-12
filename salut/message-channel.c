@@ -211,7 +211,7 @@ channel_message_stanza_callback (GObject *source_object,
   GError *error = NULL;
 
   stanza = wocky_porter_send_iq_finish (porter, result, &error);
-  if (stanza != NULL)
+  if (stanza == NULL)
     {
       DEBUG ("Failed to send IQ: %s", error->message);
       g_clear_error (&error);
@@ -294,7 +294,7 @@ parse_message_body (const gchar *body,
           "Must be a of the ytstenut namespace");
       node = NULL;
     }
-  if (wocky_strdiff (node->name, EL_YTSTENUT_MESSAGE))
+  if (node != NULL && wocky_strdiff (node->name, EL_YTSTENUT_MESSAGE))
     {
       g_set_error_literal (error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "Must be a <ytstenut:message> element");
