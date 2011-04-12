@@ -268,9 +268,12 @@ ytst_channel_manager_dispose (GObject *object)
 
   session = salut_connection_get_session (priv->connection);
 
-  wocky_porter_unregister_handler (
-      wocky_session_get_porter (session),
-      priv->message_handler_id);
+  if (session != NULL)
+    {
+      wocky_porter_unregister_handler (
+          wocky_session_get_porter (session),
+          priv->message_handler_id);
+    }
   priv->message_handler_id = 0;
 
   manager_close_all (self);
