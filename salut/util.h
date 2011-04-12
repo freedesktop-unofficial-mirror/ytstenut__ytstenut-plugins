@@ -1,5 +1,5 @@
 /*
- * ytst-util.h - Header for ytstenut utilities
+ * util.h - Header for ytstenut utilities
  * Copyright (C) 2011 Collabora Ltd.
  *
  * This library is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@
 
 #include <glib-object.h>
 
-#include "wocky-xmpp-error.h"
+#include <wocky/wocky-xmpp-error.h>
 
 G_BEGIN_DECLS
 

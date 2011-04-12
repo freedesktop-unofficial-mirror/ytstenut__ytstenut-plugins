@@ -1,5 +1,5 @@
 /*
- * ytst-message-channel.c - Source for YtstMessageChannel
+ * message-channel.c - Source for YtstMessageChannel
  * Copyright (C) 2005-2008, 2010, 2011 Collabora Ltd.
  *   @author: Sjoerd Simons <sjoerd@luon.net>
  *   @author: Stef Walter <stefw@collabora.co.uk>
@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include "ytst-message-channel.h"
+#include "message-channel.h"
 
 #include <errno.h>
 #include <netdb.h>
@@ -37,11 +37,9 @@
 #include <telepathy-glib/interfaces.h>
 #include <telepathy-glib/svc-generic.h>
 #include <telepathy-glib/svc-channel.h>
+#include <telepathy-glib/util.h>
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
-
-#include <gibber/gibber-namespaces.h>
-#include <gibber/gibber-xmpp-connection.h>
 
 #include <wocky/wocky-namespaces.h>
 #include <wocky/wocky-utils.h>
@@ -49,17 +47,16 @@
 #include <wocky/wocky-xmpp-writer.h>
 #include <wocky/wocky-xmpp-error-enumtypes.h>
 
-#define DEBUG_FLAG DEBUG_IM
-#include "debug.h"
-#include "salut-connection.h"
-#include "salut-contact.h"
-#include "salut-xmpp-connection-manager.h"
-#include "salut-signals-marshal.h"
-#include "salut-util.h"
+#include <salut/connection.h>
 
-#include "ytst-util.h"
+#define DEBUG(msg, ...) \
+  g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
+
+#include "util.h"
 
 #define EL_YTSTENUT_MESSAGE "message"
+
+static guint channel_number = 1;
 
 static void channel_ytstenut_iface_init (gpointer g_iface,
     gpointer iface_data);
@@ -77,9 +74,8 @@ static const gchar *ytst_message_channel_interfaces[] = {
 /* properties */
 enum
 {
+  PROP_CONNECTION = 1,
   PROP_CONTACT,
-  PROP_XMPP_CONNECTION,
-  PROP_XMPP_CONNECTION_MANAGER,
   PROP_TARGET_SERVICE,
   PROP_INITIATOR_SERVICE,
   PROP_REQUEST,
@@ -93,13 +89,17 @@ enum
 struct _YtstMessageChannelPrivate
 {
   gboolean dispose_has_run;
-  SalutContact *contact;
-  GibberXmppConnection *xmpp_connection;
-  SalutXmppConnectionManager *xmpp_connection_manager;
+  SalutConnection *connection;
+  WockyLLContact *contact;
 
   GCancellable *cancellable;
-  DBusGMethodInvocation *requesting;
+
+  /* TRUE if Request() has been called. */
   gboolean requested;
+
+  /* TRUE when either the other side has replied (and Replied/Failed
+   * has been fired), or one of Fail()/Reply() has been called
+   * locally. */
   gboolean replied;
 
   WockyStanza *request;
@@ -187,7 +187,8 @@ channel_get_message_attributes (WockyStanza *message)
 }
 
 static const gchar *
-channel_get_message_attribute (WockyStanza *message, const gchar *key)
+channel_get_message_attribute (WockyStanza *message,
+    const gchar *key)
 {
   WockyNode *top, *body;
 
@@ -197,59 +198,36 @@ channel_get_message_attribute (WockyStanza *message, const gchar *key)
   return wocky_node_get_attribute (body, key);
 }
 
-static gboolean
-channel_message_stanza_filter (SalutXmppConnectionManager *mgr,
-    GibberXmppConnection *conn,
-    WockyStanza *stanza,
-    SalutContact *contact,
-    gpointer user_data)
-{
-  YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (user_data);
-  YtstMessageChannelPrivate *priv = self->priv;
-  gboolean result;
-  gchar *id;
-
-  /* We can't have received a reply yet */
-  if (priv->replied)
-    return FALSE;
-
-  /* The channel has to match */
-  if (priv->contact != contact)
-    return FALSE;
-
-  /* It has to be a ytstenut message */
-  if (!ytst_message_channel_is_ytstenut_request_with_id (stanza, &id))
-    return FALSE;
-
-  /* And the id has to match */
-  result = !wocky_strdiff (id, ytst_message_channel_get_id (self));
-
-  g_free (id);
-  return result;
-}
-
 static void
-channel_message_stanza_callback (SalutXmppConnectionManager *mgr,
-    GibberXmppConnection *conn,
-    WockyStanza *stanza,
-    SalutContact *contact,
+channel_message_stanza_callback (GObject *source_object,
+    GAsyncResult *result,
     gpointer user_data)
 {
+  WockyPorter *porter = WOCKY_PORTER (source_object);
   YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (user_data);
   YtstMessageChannelPrivate *priv = self->priv;
+  WockyStanza *stanza;
   WockyXmppErrorType error_type;
   GError *core_error = NULL;
   WockyNode *specialized_node = NULL;
   GHashTable *attributes;
   gchar *body;
+  GError *error = NULL;
 
-  g_assert (!priv->replied);
+  stanza = wocky_porter_send_iq_finish (porter, result, &error);
+  if (stanza != NULL)
+    {
+      DEBUG ("Failed to send IQ: %s", error->message);
+      g_clear_error (&error);
+      return;
+    }
+
   priv->replied = TRUE;
 
   if (wocky_stanza_extract_errors (stanza, &error_type, &core_error,
       NULL, &specialized_node))
     {
-      g_assert (core_error);
+      g_assert (core_error != NULL);
       tp_yts_svc_channel_emit_failed (self,
           ytst_message_error_type_from_wocky (error_type),
           wocky_enum_to_nick (WOCKY_TYPE_XMPP_ERROR_TYPE, core_error->code),
@@ -266,25 +244,6 @@ channel_message_stanza_callback (SalutXmppConnectionManager *mgr,
       g_free (body);
     }
 }
-
-static void
-channel_connection_disconnected (YtstMessageChannel *self)
-{
-  YtstMessageChannelPrivate *priv = self->priv;
-
-  if (priv->xmpp_connection != NULL)
-    {
-      DEBUG ("connection closed. Remove filters");
-      salut_xmpp_connection_manager_remove_stanza_filter (
-          priv->xmpp_connection_manager, priv->xmpp_connection,
-          channel_message_stanza_filter, channel_message_stanza_callback, self);
-      g_object_unref (priv->xmpp_connection);
-      priv->xmpp_connection = NULL;
-    }
-
-  tp_base_channel_close (TP_BASE_CHANNEL (self));
-}
-
 
 static void
 set_attributes_on_body (WockyNodeTree *body,
@@ -353,19 +312,6 @@ parse_message_body (const gchar *body,
   return tree;
 }
 
-static void
-on_xmpp_connection_manager_connection_closed (SalutXmppConnectionManager *mgr,
-    GibberXmppConnection *conn,
-    SalutContact *contact,
-    gpointer user_data)
-{
-  YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (user_data);
-  YtstMessageChannelPrivate *priv = self->priv;
-
-  if (conn != NULL && priv->xmpp_connection == conn)
-    channel_connection_disconnected (self);
-}
-
 /* -----------------------------------------------------------------------------
  * OBJECT
  */
@@ -402,14 +348,11 @@ ytst_message_channel_get_property (GObject *object,
 
   switch (property_id)
     {
+      case PROP_CONNECTION:
+        g_value_set_object (value, priv->connection);
+        break;
       case PROP_CONTACT:
         g_value_set_object (value, priv->contact);
-        break;
-      case PROP_XMPP_CONNECTION:
-        g_value_set_object (value, priv->xmpp_connection);
-        break;
-      case PROP_XMPP_CONNECTION_MANAGER:
-        g_value_set_object (value, priv->xmpp_connection_manager);
         break;
       case PROP_TARGET_SERVICE:
         g_value_set_string (value, channel_get_message_attribute (priv->request,
@@ -449,37 +392,21 @@ ytst_message_channel_set_property (GObject *object,
 
   switch (property_id)
     {
+      case PROP_CONNECTION:
+        priv->connection = g_value_get_object (value);
+        break;
       case PROP_CONTACT:
         priv->contact = g_value_dup_object (value);
-        break;
-      case PROP_XMPP_CONNECTION:
-        priv->xmpp_connection = g_value_dup_object (value);
-        break;
-      case PROP_XMPP_CONNECTION_MANAGER:
-        priv->xmpp_connection_manager = g_value_dup_object (value);
         break;
       case PROP_REQUEST:
         g_assert (priv->request == NULL);
         priv->request = g_value_dup_object (value);
-        g_assert (priv->request);
+        g_assert (priv->request != NULL);
         break;
       default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
         break;
     }
-}
-
-static void
-ytst_message_channel_constructed (GObject *object)
-{
-  YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (object);
-  YtstMessageChannelPrivate *priv = self->priv;
-
-  g_signal_connect (priv->xmpp_connection_manager, "connection-closed",
-      G_CALLBACK (on_xmpp_connection_manager_connection_closed), self);
-
-  if (G_OBJECT_CLASS (ytst_message_channel_parent_class)->constructed)
-    G_OBJECT_CLASS (ytst_message_channel_parent_class)->constructed (object);
 }
 
 static void
@@ -493,43 +420,30 @@ ytst_message_channel_dispose (GObject *object)
 
   priv->dispose_has_run = TRUE;
 
-  if (!g_cancellable_is_cancelled (priv->cancellable))
-    g_cancellable_cancel (priv->cancellable);
-
-  g_signal_handlers_disconnect_matched (priv->xmpp_connection_manager,
-      G_SIGNAL_MATCH_DATA, 0, 0, NULL, NULL, self);
-
-  channel_connection_disconnected (self);
-  g_assert (!priv->xmpp_connection);
-
-  g_object_unref (priv->contact);
-  priv->contact = NULL;
-
-  if (priv->xmpp_connection_manager != NULL)
+  if (priv->cancellable != NULL)
     {
-      g_object_unref (priv->xmpp_connection_manager);
-      priv->xmpp_connection_manager = NULL;
+      if (!g_cancellable_is_cancelled (priv->cancellable))
+        g_cancellable_cancel (priv->cancellable);
+      g_object_unref (priv->cancellable);
+      priv->cancellable = NULL;
     }
 
-  /* release any references held by the object here */
+  if (priv->contact != NULL)
+    {
+      g_object_unref (priv->contact);
+      priv->contact = NULL;
+    }
+
+  if (priv->request != NULL)
+    {
+      g_object_unref (priv->request);
+      priv->request = NULL;
+    }
+
+  priv->connection = NULL;
 
   if (G_OBJECT_CLASS (ytst_message_channel_parent_class)->dispose)
     G_OBJECT_CLASS (ytst_message_channel_parent_class)->dispose (object);
-}
-
-static void
-ytst_message_channel_finalize (GObject *object)
-{
-  YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (object);
-  YtstMessageChannelPrivate *priv = self->priv;
-
-  /* free any data held directly by the object here */
-
-  g_object_unref (priv->cancellable);
-  if (priv->request)
-    g_object_unref (priv->request);
-
-  G_OBJECT_CLASS (ytst_message_channel_parent_class)->finalize (object);
 }
 
 static void
@@ -552,8 +466,6 @@ ytst_message_channel_class_init (YtstMessageChannelClass *klass)
   g_type_class_add_private (klass, sizeof (YtstMessageChannelPrivate));
 
   object_class->dispose = ytst_message_channel_dispose;
-  object_class->finalize = ytst_message_channel_finalize;
-  object_class->constructed = ytst_message_channel_constructed;
   object_class->get_property = ytst_message_channel_get_property;
   object_class->set_property = ytst_message_channel_set_property;
 
@@ -563,30 +475,20 @@ ytst_message_channel_class_init (YtstMessageChannelClass *klass)
   base_class->close = ytst_message_channel_close;
 
   param_spec = g_param_spec_object (
+      "connection",
+      "SalutConnection object",
+      "SalutConnection to which this channel is on",
+      SALUT_TYPE_CONNECTION,
+      G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+  g_object_class_install_property (object_class, PROP_CONNECTION, param_spec);
+
+  param_spec = g_param_spec_object (
       "contact",
-      "SalutContact object",
-      "Salut Contact to which this channel is dedicated",
-      SALUT_TYPE_CONTACT,
+      "WockyLLContact object",
+      "Wocky LL Contact to which this channel is dedicated",
+      WOCKY_TYPE_LL_CONTACT,
       G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_CONTACT, param_spec);
-
-  param_spec = g_param_spec_object (
-      "xmpp-connection",
-      "GibberXmppConnection object",
-      "Gibber XMPP Connection used for communication",
-      GIBBER_TYPE_XMPP_CONNECTION,
-      G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
-  g_object_class_install_property (object_class, PROP_XMPP_CONNECTION,
-      param_spec);
-
-  param_spec = g_param_spec_object (
-      "xmpp-connection-manager",
-      "SalutXmppConnectionManager object",
-      "Salut XMPP Connection manager used for this IM channel",
-      SALUT_TYPE_XMPP_CONNECTION_MANAGER,
-      G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
-  g_object_class_install_property (object_class, PROP_XMPP_CONNECTION_MANAGER,
-      param_spec);
 
   param_spec = g_param_spec_object ("request", "Request Stanza",
       "The stanza of the request iq", WOCKY_TYPE_STANZA,
@@ -633,72 +535,15 @@ ytst_message_channel_class_init (YtstMessageChannelClass *klass)
 }
 
 static void
-channel_complete_request (YtstMessageChannel *self)
-{
-  YtstMessageChannelPrivate *priv = self->priv;
-  DBusGMethodInvocation *invocation;
-  GError *error = NULL;
-
-  g_assert (!priv->requested);
-  g_assert (priv->requesting);
-
-  gibber_xmpp_connection_send (priv->xmpp_connection, priv->request, &error);
-
-  invocation = priv->requesting;
-  priv->requesting = NULL;
-
-  if (error != NULL)
-    {
-      dbus_g_method_return_error (invocation, error);
-      g_clear_error (&error);
-    }
-  else
-    {
-      priv->requested = TRUE;
-      tp_yts_svc_channel_return_from_request (invocation);
-    }
-}
-
-static void
-on_request_connection_ready (GObject *source_object,
-    GAsyncResult *res,
-    gpointer user_data)
-{
-  YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (user_data);
-  YtstMessageChannelPrivate *priv = self->priv;
-  GError *error = NULL;
-  GibberXmppConnection *conn;
-
-  g_assert (!priv->requested);
-  g_assert (priv->requesting);
-
-  conn = salut_xmpp_connection_manager_request_connection_finish (
-      SALUT_XMPP_CONNECTION_MANAGER (source_object), res, &error);
-  if (error != NULL)
-    {
-      dbus_g_method_return_error (priv->requesting, error);
-      g_clear_error (&error);
-      priv->requesting = NULL;
-    }
-  else
-    {
-      priv->xmpp_connection = conn;
-      salut_xmpp_connection_manager_remove_stanza_filter (
-          priv->xmpp_connection_manager, priv->xmpp_connection,
-          channel_message_stanza_filter, channel_message_stanza_callback, self);
-      channel_complete_request (self);
-    }
-}
-
-static void
 ytst_message_channel_request (TpYtsSvcChannel *channel,
     DBusGMethodInvocation *context)
 {
   YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (channel);
   YtstMessageChannelPrivate *priv = self->priv;
+  WockySession *session;
   GError *error = NULL;
 
-  if (priv->requested || priv->requesting)
+  if (priv->requested)
     {
       g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
           "Request() has already been called");
@@ -707,17 +552,14 @@ ytst_message_channel_request (TpYtsSvcChannel *channel,
       return;
     }
 
-  priv->requesting = context;
-  if (priv->xmpp_connection == NULL)
-    {
-      salut_xmpp_connection_manager_request_connection_async (
-          priv->xmpp_connection_manager, priv->contact,
-          priv->cancellable, on_request_connection_ready, self);
-    }
-  else
-    {
-      channel_complete_request (self);
-    }
+  session = salut_connection_get_session (priv->connection);
+
+  wocky_porter_send_iq_async (wocky_session_get_porter (session),
+      priv->request, priv->cancellable,
+      channel_message_stanza_callback, self);
+  priv->requested = TRUE;
+
+  tp_yts_svc_channel_return_from_request (context);
 }
 
 static void
@@ -728,10 +570,9 @@ ytst_message_channel_reply (TpYtsSvcChannel *channel,
 {
   YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (channel);
   YtstMessageChannelPrivate *priv = self->priv;
+  WockySession *session = salut_connection_get_session (priv->connection);
   WockyNodeTree *body_tree = NULL;
-  WockyNode *req_node;
   WockyNode *msg_node;
-  const gchar *from, *to, *id;
   WockyStanza *reply;
   GError *error = NULL;
 
@@ -739,7 +580,7 @@ ytst_message_channel_reply (TpYtsSvcChannel *channel,
   if (tp_channel_get_requested (TP_CHANNEL (channel)))
     {
       g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
-          "Fail() may not be called on the request side of a channel");
+          "Reply() may not be called on the request side of a channel");
       goto done;
     }
 
@@ -765,20 +606,13 @@ ytst_message_channel_reply (TpYtsSvcChannel *channel,
   wocky_node_set_attribute (msg_node, "from-service",
       channel_get_message_attribute (priv->request, "to-service"));
 
-  req_node = wocky_stanza_get_top_node (priv->request);
-  from = wocky_node_get_attribute (req_node, "from");
-  to = wocky_node_get_attribute (req_node, "to");
-  id = wocky_node_get_attribute (req_node, "id");
-  g_return_if_fail (id != NULL);
-
-  reply = wocky_stanza_build (WOCKY_STANZA_TYPE_IQ,
-      WOCKY_STANZA_SUB_TYPE_RESULT, to, from, '@', "id", id, NULL);
+  reply = wocky_stanza_build_iq_result (priv->request, NULL);
 
   /* Now append the message node */
   wocky_node_add_node_tree (wocky_stanza_get_top_node (reply), body_tree);
   g_object_unref (body_tree);
 
-  gibber_xmpp_connection_send (priv->xmpp_connection, reply, &error);
+  wocky_porter_send (wocky_session_get_porter (session), reply);
   g_object_unref (reply);
 
 done:
@@ -806,6 +640,7 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
   YtstMessageChannelPrivate *priv = self->priv;
   const gchar *type;
   GError *error = NULL;
+  WockySession *session = salut_connection_get_session (priv->connection);
   WockyStanza *reply;
 
   /* Can't call this method from this side */
@@ -843,7 +678,7 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
       ')',
       NULL);
 
-  gibber_xmpp_connection_send (priv->xmpp_connection, reply, &error);
+  wocky_porter_send (wocky_session_get_porter (session), reply);
   g_object_unref (reply);
 
 done:
@@ -879,34 +714,23 @@ channel_ytstenut_iface_init (gpointer g_iface,
 
 YtstMessageChannel *
 ytst_message_channel_new (SalutConnection *connection,
-    SalutContact *contact,
+    WockyLLContact *contact,
     WockyStanza *request,
     TpHandle handle,
-    TpHandle initiator,
-    SalutXmppConnectionManager *xmpp_manager,
-    GibberXmppConnection *conn)
+    TpHandle initiator)
 {
   TpBaseConnection *base_conn;
-  gchar *path, *id, *escaped;
+  gchar *path;
   YtstMessageChannel *channel;
 
   g_return_val_if_fail (SALUT_IS_CONNECTION (connection), NULL);
-  g_return_val_if_fail (SALUT_IS_CONTACT (contact), NULL);
+  g_return_val_if_fail (WOCKY_IS_LL_CONTACT (contact), NULL);
   g_return_val_if_fail (WOCKY_IS_STANZA (request), NULL);
-  g_return_val_if_fail (SALUT_IS_XMPP_CONNECTION_MANAGER (xmpp_manager), NULL);
-  g_return_val_if_fail (!conn || GIBBER_IS_XMPP_CONNECTION (conn), NULL);
 
   base_conn = TP_BASE_CONNECTION (connection);
 
-  if (!ytst_message_channel_is_ytstenut_request_with_id (request, &id))
-    g_return_val_if_reached (NULL);
-
-  escaped = tp_escape_as_identifier (id);
-  g_free (id);
-
-  path = g_strdup_printf ("%s/YtstenutChannel/%s",
-      base_conn->object_path, escaped);
-  g_free (escaped);
+  path = g_strdup_printf ("%s/YtstenutChannel%u",
+      base_conn->object_path, channel_number++);
 
   channel = g_object_new (YTST_TYPE_MESSAGE_CHANNEL,
       "connection", connection,
@@ -915,8 +739,6 @@ ytst_message_channel_new (SalutConnection *connection,
       "handle", handle,
       "object-path", path,
       "initiator-handle", initiator,
-      "xmpp-connection", conn,
-      "xmpp-connection-manager", xmpp_manager,
       NULL);
 
   tp_base_channel_register (TP_BASE_CHANNEL (channel));
@@ -925,61 +747,10 @@ ytst_message_channel_new (SalutConnection *connection,
   return channel;
 }
 
-const gchar *
-ytst_message_channel_get_id (YtstMessageChannel *self)
-{
-  YtstMessageChannelPrivate *priv = self->priv;
-  WockyNode *top;
-  const gchar *id;
-
-  g_return_val_if_fail (YTST_IS_MESSAGE_CHANNEL (self), NULL);
-
-  top = wocky_stanza_get_top_node (priv->request);
-  id = wocky_node_get_attribute (top, "id");
-  g_assert (id);
-  return id;
-}
-
-gboolean
-ytst_message_channel_is_ytstenut_request_with_id (WockyStanza *stanza,
-    gchar **id)
-{
-  WockyNode *top, *message;
-  WockyStanzaType type = WOCKY_STANZA_TYPE_NONE;
-  WockyStanzaSubType sub_type = WOCKY_STANZA_SUB_TYPE_NONE;
-  const gchar *value;
-
-  g_return_val_if_fail (WOCKY_IS_STANZA (stanza), FALSE);
-
-  /* Check that it's an iq of get/set type */
-  wocky_stanza_get_type_info (stanza, &type, &sub_type);
-  if (type != WOCKY_STANZA_TYPE_IQ)
-    return FALSE;
-  if (sub_type != WOCKY_STANZA_SUB_TYPE_GET &&
-      sub_type != WOCKY_STANZA_SUB_TYPE_SET)
-    return FALSE;
-
-  /* It must have an id */
-  top = wocky_stanza_get_top_node (stanza);
-  value = wocky_node_get_attribute (top, "id");
-  if (value == NULL)
-    return FALSE;
-
-  /* And it must have one (and only one) child element in ytstenut ns */
-  message = wocky_node_get_first_child (top);
-  if (!message || wocky_strdiff (message->name, EL_YTSTENUT_MESSAGE) ||
-      !wocky_node_has_ns (message, YTST_MESSAGE_NS))
-    return FALSE;
-
-  if (id != NULL)
-    *id = g_strdup (value);
-  return TRUE;
-}
-
 WockyStanza *
 ytst_message_channel_build_request (GHashTable *request_props,
     const gchar *from,
-    const gchar *to,
+    WockyLLContact *to,
     GError **error)
 {
   WockyStanzaSubType sub_type = WOCKY_STANZA_SUB_TYPE_NONE;
@@ -990,7 +761,6 @@ ytst_message_channel_build_request (GHashTable *request_props,
   GHashTable *attributes;
   const gchar *initiator_service;
   const gchar *target_service;
-  gchar *id;
 
   request_type = tp_asv_get_uint32 (request_props,
       TP_YTS_IFACE_CHANNEL ".RequestType", NULL);
@@ -1068,10 +838,8 @@ ytst_message_channel_build_request (GHashTable *request_props,
   wocky_node_set_attribute (wocky_node_tree_get_top_node (tree),
       "to-service", target_service);
 
-  id = salut_generate_id ();
-  request = wocky_stanza_build (WOCKY_STANZA_TYPE_IQ, sub_type, from,
-      to, '@', "id", id, NULL);
-  g_free (id);
+  request = wocky_stanza_build_to_contact (WOCKY_STANZA_TYPE_IQ, sub_type, from,
+      WOCKY_CONTACT (to), NULL);
   wocky_node_add_node_tree (wocky_stanza_get_top_node (request), tree);
   g_object_unref (tree);
 

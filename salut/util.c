@@ -1,5 +1,5 @@
 /*
- * ytst-util.c - Source for ytstenut utilities
+ * util.c - Source for ytstenut utilities
  * Copyright (C) 2011 Collabora Ltd.
  *   @author: Stef Walter <stefw@collabora.co.uk>
  *
@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include "ytst-util.h"
+#include "util.h"
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 

@@ -1,5 +1,5 @@
 /*
- * ytst-channel-manager.c - Source for YtstChannelManager
+ * channel-manager.c - Source for YtstChannelManager
  * Copyright (C) 2005, 2011 Collabora Ltd.
  *
  * This library is free software; you can redistribute it and/or
@@ -22,22 +22,20 @@
 #include <string.h>
 
 #include "extensions/extensions.h"
-#include "ytst-message-channel.h"
-#include "ytst-channel-manager.h"
-#include "salut-xmpp-connection-manager.h"
-
-#include <gibber/gibber-xmpp-connection.h>
-#include <gibber/gibber-namespaces.h>
+#include "message-channel.h"
+#include "channel-manager.h"
+#include "util.h"
 
 #include <telepathy-glib/channel-manager.h>
 #include <telepathy-glib/dbus.h>
 #include <telepathy-glib/gtypes.h>
 #include <telepathy-glib/interfaces.h>
+#include <telepathy-glib/util.h>
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
-#define DEBUG_FLAG DEBUG_IM
-#include "debug.h"
+#define DEBUG(msg, ...) \
+  g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
 
 static void ytst_channel_manager_iface_init (gpointer g_iface,
     gpointer iface_data);
@@ -51,19 +49,16 @@ G_DEFINE_TYPE_WITH_CODE (YtstChannelManager, ytst_channel_manager, G_TYPE_OBJECT
 enum
 {
   PROP_CONNECTION = 1,
-  PROP_CONTACT_MANAGER,
-  PROP_XMPP_CONNECTION_MANAGER,
   LAST_PROPERTY
 };
 
 /* private structure */
 struct _YtstChannelManagerPrivate
 {
-  SalutContactManager *contact_manager;
   SalutConnection *connection;
-  SalutXmppConnectionManager *xmpp_connection_manager;
-  GHashTable *channels;
+  GQueue *channels;
   gulong status_changed_id;
+  guint message_handler_id;
   gboolean dispose_has_run;
 };
 
@@ -77,16 +72,14 @@ on_channel_closed (YtstMessageChannel *channel,
 {
   YtstChannelManager *self = YTST_CHANNEL_MANAGER (user_data);
   YtstChannelManagerPrivate *priv = self->priv;
-  const gchar *id;
 
   tp_channel_manager_emit_channel_closed_for_object (self,
     TP_EXPORTABLE_CHANNEL (channel));
 
   if (priv->channels != NULL)
     {
-      id = ytst_message_channel_get_id (channel);
-      DEBUG ("Removing channel with id %s", id);
-      g_hash_table_remove (priv->channels, id);
+      DEBUG ("Removing channel %p", channel);
+      g_queue_remove (priv->channels, channel);
     }
 }
 
@@ -95,63 +88,55 @@ manager_take_ownership_of_channel (YtstChannelManager *self,
     YtstMessageChannel *channel)
 {
   YtstChannelManagerPrivate *priv = self->priv;
-  const gchar *id;
-
-  id = ytst_message_channel_get_id (channel);
-  g_assert (id != NULL);
 
   /* Takes ownership of channel */
-  g_assert (g_hash_table_lookup (priv->channels, id) == NULL);
-  g_hash_table_insert (priv->channels, g_strdup (id), channel);
+  g_assert (g_queue_index (priv->channels, channel) == -1);
+  g_queue_push_tail (priv->channels, channel);
 
   g_signal_connect (channel, "closed", G_CALLBACK (on_channel_closed), self);
 }
 
 static gboolean
-message_stanza_filter (SalutXmppConnectionManager *mgr,
-    GibberXmppConnection *conn,
+message_stanza_callback (WockyPorter *porter,
     WockyStanza *stanza,
-    SalutContact *contact,
     gpointer user_data)
 {
   YtstChannelManager *self = YTST_CHANNEL_MANAGER (user_data);
   YtstChannelManagerPrivate *priv = self->priv;
-  gboolean result;
-  gchar *id;
 
-  if (!ytst_message_channel_is_ytstenut_request_with_id (stanza, &id))
-    return FALSE;
+  WockyNode *top;
+  WockyStanzaSubType sub_type = WOCKY_STANZA_SUB_TYPE_NONE;
 
-  /* We are interested by this stanza only if we need to create a new ytstenut
-   * channel to handle it */
-  result = (g_hash_table_lookup (priv->channels, id) == NULL);
-  g_free (id);
-  return result;
-}
-
-static void
-message_stanza_callback (SalutXmppConnectionManager *mgr,
-    GibberXmppConnection *conn,
-    WockyStanza *stanza,
-    SalutContact *contact,
-    gpointer user_data)
-{
-  YtstChannelManager *self = YTST_CHANNEL_MANAGER (user_data);
-  YtstChannelManagerPrivate *priv = self->priv;
   TpBaseConnection *base_conn = TP_BASE_CONNECTION (priv->connection);
   TpHandleRepoIface *handle_repo = tp_base_connection_get_handles (base_conn,
        TP_HANDLE_TYPE_CONTACT);
   YtstMessageChannel *channel;
   TpHandle handle;
+  WockyLLContact *contact = WOCKY_LL_CONTACT (
+      wocky_stanza_get_from_contact (stanza));
 
-  handle = tp_handle_lookup (handle_repo, contact->name, NULL, NULL);
+  /* needs to be type get or set */
+  wocky_stanza_get_type_info (stanza, NULL, &sub_type);
+  if (sub_type != WOCKY_STANZA_SUB_TYPE_GET
+      && sub_type != WOCKY_STANZA_SUB_TYPE_SET)
+    return FALSE;
+
+  /* we must have an ID */
+  top = wocky_stanza_get_top_node (stanza);
+  if (wocky_node_get_attribute (top, "id") == NULL)
+    return FALSE;
+
+  handle = tp_handle_lookup (handle_repo,
+      wocky_ll_contact_get_jid (contact), NULL, NULL);
   g_assert (handle != 0);
 
   channel = ytst_message_channel_new (priv->connection, contact, stanza, handle,
-      base_conn->self_handle, priv->xmpp_connection_manager, conn);
+      base_conn->self_handle);
   manager_take_ownership_of_channel (self, channel);
   tp_channel_manager_emit_new_channel (self, TP_EXPORTABLE_CHANNEL (channel),
       NULL);
+
+  return TRUE;
 }
 
 static void
@@ -161,11 +146,10 @@ manager_close_all (YtstChannelManager *self)
 
   if (priv->channels != NULL)
     {
-      GHashTable *tmp = priv->channels;
-
       DEBUG ("closing channels");
+      g_queue_foreach (priv->channels, (GFunc) g_object_unref, NULL);
+      g_queue_free (priv->channels);
       priv->channels = NULL;
-      g_hash_table_destroy (tmp);
     }
 
   if (priv->status_changed_id != 0UL)
@@ -211,12 +195,6 @@ ytst_channel_manager_get_property (GObject *object,
       case PROP_CONNECTION:
         g_value_set_object (value, priv->connection);
         break;
-      case PROP_CONTACT_MANAGER:
-        g_value_set_object (value, priv->contact_manager);
-        break;
-      case PROP_XMPP_CONNECTION_MANAGER:
-        g_value_set_object (value, priv->xmpp_connection_manager);
-        break;
       default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
         break;
@@ -237,12 +215,6 @@ ytst_channel_manager_set_property (GObject *object,
       case PROP_CONNECTION:
         priv->connection = g_value_get_object (value);
         break;
-      case PROP_CONTACT_MANAGER:
-        priv->contact_manager = g_value_dup_object (value);
-        break;
-      case PROP_XMPP_CONNECTION_MANAGER:
-        priv->xmpp_connection_manager = g_value_dup_object (value);
-        break;
       default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
         break;
@@ -254,13 +226,20 @@ ytst_channel_manager_constructed (GObject *object)
 {
   YtstChannelManager *self = YTST_CHANNEL_MANAGER (object);
   YtstChannelManagerPrivate *priv = self->priv;
+  WockySession *session;
 
-  priv->channels = g_hash_table_new_full (g_str_hash, g_str_equal,
-      g_free, g_object_unref);
+  priv->channels = g_queue_new ();
 
-  salut_xmpp_connection_manager_add_stanza_filter (
-      priv->xmpp_connection_manager, NULL,
-      message_stanza_filter, message_stanza_callback, self);
+  session = salut_connection_get_session (priv->connection);
+
+  priv->message_handler_id = wocky_porter_register_handler_from_anyone (
+      wocky_session_get_porter (session),
+      WOCKY_STANZA_TYPE_IQ, WOCKY_STANZA_SUB_TYPE_NONE,
+      WOCKY_PORTER_HANDLER_PRIORITY_NORMAL,
+      message_stanza_callback, self,
+      '(', "message",
+        ':', YTST_MESSAGE_NS,
+      ')', NULL);
 
   priv->status_changed_id = g_signal_connect (priv->connection,
       "status-changed", (GCallback) on_connection_status_changed, self);
@@ -274,27 +253,19 @@ ytst_channel_manager_dispose (GObject *object)
 {
   YtstChannelManager *self = YTST_CHANNEL_MANAGER (object);
   YtstChannelManagerPrivate *priv = self->priv;
+  WockySession *session;
 
   if (priv->dispose_has_run)
     return;
 
   priv->dispose_has_run = TRUE;
 
-  salut_xmpp_connection_manager_remove_stanza_filter (
-      priv->xmpp_connection_manager, NULL,
-      message_stanza_filter, message_stanza_callback, self);
+  session = salut_connection_get_session (priv->connection);
 
-  if (priv->contact_manager != NULL)
-    {
-      g_object_unref (priv->contact_manager);
-      priv->contact_manager = NULL;
-    }
-
-  if (priv->xmpp_connection_manager != NULL)
-    {
-      g_object_unref (priv->xmpp_connection_manager);
-      priv->xmpp_connection_manager = NULL;
-    }
+  wocky_porter_unregister_handler (
+      wocky_session_get_porter (session),
+      priv->message_handler_id);
+  priv->message_handler_id = 0;
 
   manager_close_all (self);
 
@@ -323,28 +294,6 @@ ytst_channel_manager_class_init (YtstChannelManagerClass *klass)
       G_PARAM_CONSTRUCT_ONLY |
       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_CONNECTION, param_spec);
-
-  param_spec = g_param_spec_object (
-      "contact-manager",
-      "SalutContactManager object",
-      "Salut Contact Manager associated with the Salut Connection of this "
-      "manager",
-      SALUT_TYPE_CONTACT_MANAGER,
-      G_PARAM_CONSTRUCT_ONLY |
-      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
-  g_object_class_install_property (object_class, PROP_CONTACT_MANAGER,
-      param_spec);
-
-  param_spec = g_param_spec_object (
-      "xmpp-connection-manager",
-      "SalutXmppConnectionManager object",
-      "Salut Xmpp Connection Manager associated with the Salut Connection "
-      "of this manager",
-      SALUT_TYPE_XMPP_CONNECTION_MANAGER,
-      G_PARAM_CONSTRUCT_ONLY |
-      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
-  g_object_class_install_property (object_class, PROP_XMPP_CONNECTION_MANAGER,
-      param_spec);
 }
 
 typedef struct
@@ -354,8 +303,7 @@ typedef struct
 } foreach_closure;
 
 static void
-run_foreach_one (gpointer key,
-    gpointer value,
+run_foreach_one (gpointer value,
     gpointer data)
 {
   TpExportableChannel *chan = TP_EXPORTABLE_CHANNEL (value);
@@ -372,7 +320,7 @@ ytst_channel_manager_foreach_channel (TpChannelManager *iface,
   YtstChannelManagerPrivate *priv = self->priv;
   foreach_closure f = { func, user_data };
 
-  g_hash_table_foreach (priv->channels, run_foreach_one, &f);
+  g_queue_foreach (priv->channels, run_foreach_one, &f);
 }
 
 static const gchar * const channel_fixed_properties[] = {
@@ -428,7 +376,9 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   TpHandle handle;
   GError *error = NULL;
   const gchar *name;
-  SalutContact *contact;
+  WockySession *session;
+  WockyContactFactory *factory;
+  WockyLLContact *contact;
   WockyStanza *request;
   GSList *tokens = NULL;
   YtstMessageChannel *channel;
@@ -456,7 +406,9 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   name = tp_handle_inspect (handle_repo, handle);
   DEBUG ("Requested channel for handle: %u (%s)", handle, name);
 
-  contact = salut_contact_manager_get_contact (priv->contact_manager, handle);
+  session = salut_connection_get_session (priv->connection);
+  factory = wocky_session_get_contact_factory (session);
+  contact = wocky_contact_factory_lookup_ll_contact (factory, name);
   if (contact == NULL)
     {
       g_set_error (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
@@ -465,7 +417,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
     }
 
   request = ytst_message_channel_build_request (request_properties,
-      priv->connection->name, contact->name, &error);
+      salut_connection_get_name (priv->connection), contact, &error);
   if (request == NULL)
     {
       g_object_unref (contact);
@@ -473,8 +425,10 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
     }
 
   channel = ytst_message_channel_new (priv->connection, contact, request, handle,
-      base_conn->self_handle, priv->xmpp_connection_manager, NULL);
+      base_conn->self_handle);
   manager_take_ownership_of_channel (self, channel);
+
+  g_object_unref (request);
 
   if (request_token != NULL)
     tokens = g_slist_prepend (tokens, request_token);
@@ -512,13 +466,9 @@ ytst_channel_manager_iface_init (gpointer g_iface,
 
 /* public functions */
 YtstChannelManager *
-ytst_channel_manager_new (SalutConnection *connection,
-    SalutContactManager *contact_manager,
-    SalutXmppConnectionManager *xmpp_connection_manager)
+ytst_channel_manager_new (SalutConnection *connection)
 {
   return g_object_new (YTST_TYPE_CHANNEL_MANAGER,
       "connection", connection,
-      "contact-manager", contact_manager,
-      "xmpp-connection-manager", xmpp_connection_manager,
       NULL);
 }

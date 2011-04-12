@@ -1,5 +1,5 @@
 /*
- * ytst-channel-manager.h - Header for YtstChannelManager
+ * channel-manager.h - Header for YtstChannelManager
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,8 +20,8 @@
 #define __YTST_CHANNEL_MANAGER_H__
 
 #include <glib-object.h>
-#include "ytst-message-channel.h"
-#include "salut-xmpp-connection-manager.h"
+
+#include <salut/connection.h>
 
 G_BEGIN_DECLS
 
@@ -58,8 +58,6 @@ GType ytst_channel_manager_get_type (void);
                               YtstChannelManagerClass))
 
 YtstChannelManager *
-ytst_channel_manager_new (SalutConnection *connection,
-    SalutContactManager *contact_manager,
-    SalutXmppConnectionManager *connection_manager);
+ytst_channel_manager_new (SalutConnection *connection);
 
 #endif /* #ifndef __YTST_CHANNEL_MANAGER_H__*/

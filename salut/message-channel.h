@@ -1,5 +1,5 @@
 /*
- * ytst-message-channel.h - Header for YtstMessageChannel
+ * message-channel.h - Header for YtstMessageChannel
  * Copyright (C) 2005, 2011 Collabora Ltd.
  *
  * This library is free software; you can redistribute it and/or
@@ -20,14 +20,13 @@
 #ifndef __YTST_MESSAGE_CHANNEL_H__
 #define __YTST_MESSAGE_CHANNEL_H__
 
-#include "salut-connection.h"
-#include "salut-contact.h"
-#include "salut-xmpp-connection-manager.h"
-
 #include <glib-object.h>
-#include <gibber/gibber-xmpp-connection.h>
 
 #include <telepathy-glib/base-channel.h>
+
+#include <wocky/wocky-ll-contact.h>
+
+#include <salut/connection.h>
 
 G_BEGIN_DECLS
 
@@ -63,21 +62,17 @@ GType ytst_message_channel_get_type (void);
                               YtstMessageChannelClass))
 
 YtstMessageChannel* ytst_message_channel_new (SalutConnection *connection,
-    SalutContact *contact,
+    WockyLLContact *contact,
     WockyStanza *request,
     TpHandle handle,
-    TpHandle initiator,
-    SalutXmppConnectionManager *xmpp_manager,
-    GibberXmppConnection *conn);
+    TpHandle initiator);
 
-const gchar * ytst_message_channel_get_id (YtstMessageChannel *self);
-
-gboolean ytst_message_channel_is_ytstenut_request_with_id (WockyStanza *stanza,
-    gchar **id);
+gboolean ytst_message_channel_is_ytstenut_request_with_id (
+    WockyStanza *stanza, gchar **id);
 
 WockyStanza * ytst_message_channel_build_request (GHashTable *request_props,
     const gchar *from,
-    const gchar *to,
+    WockyLLContact *to,
     GError **error);
 
 G_END_DECLS
