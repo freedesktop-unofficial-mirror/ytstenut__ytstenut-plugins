@@ -137,7 +137,7 @@ message_stanza_callback (WockyPorter *porter,
   g_assert (handle != 0);
 
   channel = ytst_message_channel_new (priv->connection, contact, stanza, handle,
-      base_conn->self_handle);
+      handle);
   manager_take_ownership_of_channel (self, channel);
   tp_channel_manager_emit_new_channel (self, TP_EXPORTABLE_CHANNEL (channel),
       NULL);
