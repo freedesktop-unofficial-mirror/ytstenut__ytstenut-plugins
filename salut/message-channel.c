@@ -163,7 +163,8 @@ attribute_to_hashtable (const gchar *key,
     gpointer user_data)
 {
   /* We only expose non namespace attributes in these properties */
-  if (ns == NULL)
+  if (ns == NULL && wocky_strdiff (key, "from-service")
+      && wocky_strdiff (key, "to-service"))
     g_hash_table_insert (user_data, g_strdup (key), g_strdup (value));
   return TRUE;
 }
