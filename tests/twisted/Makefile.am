@@ -1,8 +1,8 @@
 TWISTED_TESTS =
 
 TWISTED_BASIC_TESTS = \
-	ytstenut/account.py \
-	ytstenut/sidecar.py
+	mission-control/account.py \
+	salut/sidecar.py
 
 config.py: Makefile
 	$(AM_V_GEN) { \
