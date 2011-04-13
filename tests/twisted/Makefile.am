@@ -33,11 +33,12 @@ BASIC_TESTS_ENVIRONMENT = \
 	XDG_CONFIG_HOME=@abs_top_builddir@/tests/twisted/tmp-$(TMPSUFFIX) \
 	XDG_CONFIG_DIRS=@abs_top_srcdir@/tests/twisted \
 	XDG_DATA_HOME=@abs_top_builddir@/tests/twisted/tmp-$(TMPSUFFIX) \
-	XDG_DATA_DIRS=@abs_top_srcdir@/tests/twisted \
+	XDG_DATA_DIRS=@abs_top_srcdir@/tests/twisted:$$XDG_DATA_DIRS \
 	XDG_CACHE_DIR=@abs_top_builddir@/tests/twisted/tmp-$(TMPSUFFIX) \
 	XDG_CACHE_HOME=@abs_top_builddir@/tests/twisted/tmp-$(TMPSUFFIX) \
 	G_DEBUG=fatal_criticals \
-	SALUT_PLUGIN_DIR=@abs_top_builddir@/salut/.libs
+	SALUT_PLUGIN_DIR=@abs_top_builddir@/salut/.libs \
+	SALUT_TEST_BACKTRACE=1
 
 WITH_SESSION_BUS = \
 	sh $(srcdir)/tools/with-session-bus.sh \
