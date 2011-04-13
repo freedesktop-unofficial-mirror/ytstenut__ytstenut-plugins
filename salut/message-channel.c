@@ -708,8 +708,11 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
       '(', "error",
         '@', "type", type,
         '(', stanza_error_name, ':', WOCKY_XMPP_NS_STANZAS, ')',
-        '(', ytstenut_error_name, ':', WOCKY_XMPP_NS_PUBSUB_ERRORS, ')',
-        '(', "text", '$', text, ')',
+        '(', ytstenut_error_name, ':', YTST_MESSAGE_NS, ')',
+        '(', "text",
+          ':', WOCKY_XMPP_NS_STANZAS,
+          '$', text,
+        ')',
       ')',
       NULL);
 
