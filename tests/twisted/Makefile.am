@@ -130,7 +130,10 @@ EXTRA_DIST = \
 	salutservicetest.py \
 	avahimock.py \
 	ns.py \
-	yconstants.py
+	yconstants.py \
+	avahitest.py \
+	xmppstream.py \
+	ipv6.py
 
 CLEANFILES = \
 	accounts/accounts.cfg \
