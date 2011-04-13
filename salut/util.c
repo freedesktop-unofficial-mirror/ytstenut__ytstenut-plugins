@@ -1,6 +1,6 @@
 /*
  * util.c - Source for ytstenut utilities
- * Copyright (C) 2011 Collabora Ltd.
+ * Copyright (C) 2011 Intel, Corp.
  *   @author: Stef Walter <stefw@collabora.co.uk>
  *
  * This library is free software; you can redistribute it and/or

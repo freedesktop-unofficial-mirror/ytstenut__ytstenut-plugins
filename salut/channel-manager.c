@@ -1,5 +1,6 @@
 /*
  * channel-manager.c - Source for YtstChannelManager
+ * Copyright (C) 2011 Intel, Corp.
  * Copyright (C) 2005, 2011 Collabora Ltd.
  *
  * This library is free software; you can redistribute it and/or

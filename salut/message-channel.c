@@ -1,6 +1,7 @@
 /*
  * message-channel.c - Source for YtstMessageChannel
  * Copyright (C) 2005-2008, 2010, 2011 Collabora Ltd.
+ * Copyright (C) 2011 Intel, Corp.
  *   @author: Sjoerd Simons <sjoerd@luon.net>
  *   @author: Stef Walter <stefw@collabora.co.uk>
  *
