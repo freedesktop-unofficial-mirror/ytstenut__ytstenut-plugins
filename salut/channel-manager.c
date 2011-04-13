@@ -118,8 +118,8 @@ message_stanza_callback (WockyPorter *porter,
        TP_HANDLE_TYPE_CONTACT);
   YtstMessageChannel *channel;
   TpHandle handle;
-  WockyLLContact *contact = WOCKY_LL_CONTACT (
-      wocky_stanza_get_from_contact (stanza));
+  WockyContact *contact = wocky_stanza_get_from_contact (stanza);
+  gchar *jid;
 
   /* needs to be type get or set */
   wocky_stanza_get_type_info (stanza, NULL, &sub_type);
@@ -132,15 +132,21 @@ message_stanza_callback (WockyPorter *porter,
   if (wocky_node_get_attribute (top, "id") == NULL)
     return FALSE;
 
-  handle = tp_handle_lookup (handle_repo,
-      wocky_ll_contact_get_jid (contact), NULL, NULL);
-  g_assert (handle != 0);
+  jid = wocky_contact_dup_jid (WOCKY_CONTACT (contact));
+  handle = tp_handle_lookup (handle_repo, jid, NULL, NULL);
+  if (handle == 0)
+    {
+      g_free (jid);
+      return FALSE;
+    }
 
-  channel = ytst_message_channel_new (priv->connection, contact, stanza, handle,
-      handle, FALSE);
+  channel = ytst_message_channel_new (priv->connection,
+      WOCKY_LL_CONTACT (contact), stanza, handle, handle, FALSE);
   manager_take_ownership_of_channel (self, channel);
   tp_channel_manager_emit_new_channel (self, TP_EXPORTABLE_CHANNEL (channel),
       NULL);
+
+  g_free (jid);
 
   return TRUE;
 }
