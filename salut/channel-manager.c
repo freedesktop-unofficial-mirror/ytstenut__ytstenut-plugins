@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "extensions/extensions.h"
 #include "message-channel.h"
 #include "channel-manager.h"
 #include "util.h"
