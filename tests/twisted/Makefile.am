@@ -1,9 +1,13 @@
 TWISTED_TESTS =
 
-TWISTED_BASIC_TESTS = \
+TWISTED_BASIC_TESTS =
+
+if WANT_TWISTED_TESTS
+TWISTED_BASIC_TESTS += \
 	mission-control/account.py \
 	salut/sidecar.py \
 	salut/message.py
+endif
 
 config.py: Makefile
 	$(AM_V_GEN) { \

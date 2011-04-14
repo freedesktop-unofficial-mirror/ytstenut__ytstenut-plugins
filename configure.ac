@@ -74,6 +74,19 @@ else
 fi
 AC_SUBST(SALUT_EXECUTABLE)
 
+AM_PATH_PYTHON([2.5])
+
+# Check for a python >= 2.5 with twisted to run python tests
+AC_MSG_CHECKING([for Python with Avahi, Twisted and XMPP protocol support])
+if $PYTHON -c "import twisted.words.xish.domish, twisted.words.protocols.jabber, twisted.internet.reactor, avahi" >/dev/null 2>&1; then
+    TEST_PYTHON="$PYTHON"
+else
+    TEST_PYTHON=false
+fi
+AC_MSG_RESULT([$TEST_PYTHON])
+AC_SUBST(TEST_PYTHON)
+AM_CONDITIONAL([WANT_TWISTED_TESTS], test false != "$TEST_PYTHON")
+
 # ------------------------------------------------------------------------------
 
 AC_ARG_ENABLE(debug,
