@@ -28,10 +28,11 @@
 
 #include <salut/caps-channel-manager.h>
 
+#include "utils.h"
+
 #define DEBUG(msg, ...) \
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
 
-#define FEATURE_PREFIX "urn:ytstenut:capabilities:"
 #define INTERESTED "com.meego.xpmn.ytstenut.Channel/interested/"
 
 static void channel_manager_iface_init (gpointer g_iface, gpointer data);
@@ -71,7 +72,7 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
 
       cap = *t + strlen (INTERESTED);
 
-      feature = g_strdup_printf ("%s%s+notify", FEATURE_PREFIX, cap);
+      feature = g_strdup_printf ("%s%s+notify", CAPS_FEATURE_PREFIX, cap);
 
       gabble_capability_set_add (cap_set, feature);
 

@@ -42,6 +42,8 @@ typedef enum {
   YTST_MESSAGE_ERROR_ITEM_NOT_FOUND,
 } YtstMessageError;
 
+#define CAPS_FEATURE_PREFIX "urn:ytstenut:capabilities:"
+
 gint ytst_message_error_type_to_wocky (guint ytstenut_type);
 
 guint ytst_message_error_type_from_wocky (gint wocky_type);
