@@ -181,6 +181,9 @@ def bad_requests(q, bus, conn):
     # RequestAttributes: a{ss}, not a{si}
     ensure_error({ycs.REQUEST_ATTRIBUTES: {'lol': 2}})
 
+    # RequestBody
+    ensure_error({ycs.REQUEST_BODY: 'no way is this real XML'})
+
 def setup_incoming_tests(q, bus, conn):
     handle, contact_name, listener = setup_tests(q, bus, conn)
 

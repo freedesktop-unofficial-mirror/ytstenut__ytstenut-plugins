@@ -26,6 +26,8 @@ missing
 stamp-h1
 *~
 *.pyc
+\#*\#
+.#*
 
 
 /tests/twisted/tools/exec-with-log.sh
