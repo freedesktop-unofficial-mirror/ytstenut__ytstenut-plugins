@@ -24,5 +24,5 @@ ytstenut_salut_la_SOURCES = \
 	message-channel.h \
 	channel-manager.c \
 	channel-manager.h \
-	util.c \
-	util.h
+	utils.c \
+	utils.h

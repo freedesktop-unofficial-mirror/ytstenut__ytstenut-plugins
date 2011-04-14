@@ -24,7 +24,7 @@
 
 #include "message-channel.h"
 #include "channel-manager.h"
-#include "util.h"
+#include "utils.h"
 
 #include <telepathy-glib/channel-manager.h>
 #include <telepathy-glib/dbus.h>

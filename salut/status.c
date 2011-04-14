@@ -24,6 +24,7 @@
 #include "status.h"
 
 #include <salut/plugin.h>
+#include <salut/util.h>
 
 #include <telepathy-glib/svc-generic.h>
 

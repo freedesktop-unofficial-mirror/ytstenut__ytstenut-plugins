@@ -20,7 +20,7 @@
 
 #include "config.h"
 
-#include "util.h"
+#include "utils.h"
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 

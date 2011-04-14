@@ -53,7 +53,7 @@
 #define DEBUG(msg, ...) \
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
 
-#include "util.h"
+#include "utils.h"
 
 #define EL_YTSTENUT_MESSAGE "message"
 
