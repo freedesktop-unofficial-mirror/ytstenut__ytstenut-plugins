@@ -12,17 +12,21 @@ conf_files = $(conf_in_files:.conf.in=.conf)
 BUILT_SOURCES = \
 	$(service_files) \
 	$(conf_files) \
-	exec-with-log.sh
+	exec-with-log.sh \
+	salut-exec-with-log.sh
 
 EXTRA_DIST = \
 	$(service_in_files) \
 	$(conf_in_files) \
 	exec-with-log.sh.in \
+	salut-exec-with-log.sh.in \
 	fake-startup.sh \
 	valgrind.supp \
-	with-session-bus.sh
+	with-session-bus.sh \
+	run_and_bt.gdb
 
 CLEANFILES = \
     $(BUILT_SOURCES) \
     missioncontrol.log \
-    missioncontrol-*.log
+    missioncontrol-*.log \
+    salut-testing.log

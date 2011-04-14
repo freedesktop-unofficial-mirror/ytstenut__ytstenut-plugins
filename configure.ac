@@ -103,6 +103,7 @@ AC_OUTPUT([
 	tests/twisted/Makefile
 	tests/twisted/tools/Makefile
 	tests/twisted/tools/exec-with-log.sh
+	tests/twisted/tools/salut-exec-with-log.sh
 	tests/twisted/tools/tmp-session-bus.conf
 	tests/twisted/tools/org.freedesktop.Telepathy.MissionControl5.service
 	tests/twisted/tools/org.freedesktop.Telepathy.Client.Logger.service
