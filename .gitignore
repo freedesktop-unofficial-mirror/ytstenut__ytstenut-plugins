@@ -40,3 +40,4 @@ stamp-h1
 /tests/twisted/tools/salut-testing.log
 /tests/twisted/tmp-*/
 /tests/twisted/config.py
+/tests/twisted/with-session-bus*
