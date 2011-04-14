@@ -25,6 +25,10 @@
 
 #include <telepathy-glib/base-channel.h>
 
+#include <wocky/wocky-session.h>
+
+#include <salut/connection.h>
+
 G_BEGIN_DECLS
 
 typedef struct _YtstStatus YtstStatus;
@@ -58,7 +62,8 @@ GType ytst_status_get_type (void);
 #define YTST_STATUS_GET_CLASS(obj) \
   (G_TYPE_INSTANCE_GET_CLASS ((obj), YTST_TYPE_STATUS, YtstStatusClass))
 
-YtstStatus* ytst_status_new (void);
+YtstStatus * ytst_status_new (WockySession *session,
+    SalutConnection *connection);
 
 G_END_DECLS
 

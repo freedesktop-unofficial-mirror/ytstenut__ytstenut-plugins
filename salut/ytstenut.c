@@ -88,7 +88,7 @@ ytstenut_plugin_create_sidecar (
 
   if (!tp_strdiff (sidecar_interface, TP_YTS_IFACE_STATUS))
     {
-      sidecar = SALUT_SIDECAR (ytst_status_new ());
+      sidecar = SALUT_SIDECAR (ytst_status_new (session, connection));
       DEBUG ("created side car for: %s", TP_YTS_IFACE_STATUS);
     }
   else

@@ -47,7 +47,9 @@ G_DEFINE_TYPE_WITH_CODE (YtstStatus, ytst_status, G_TYPE_OBJECT,
 /* properties */
 enum
 {
-  PROP_DISCOVERED_STATUSES = 1,
+  PROP_SESSION = 1,
+  PROP_CONNECTION,
+  PROP_DISCOVERED_STATUSES,
   PROP_DISCOVERED_SERVICES,
   LAST_PROPERTY
 };
@@ -55,6 +57,9 @@ enum
 /* private structure */
 struct _YtstStatusPrivate
 {
+  WockySession *session;
+  SalutConnection *connection;
+
   /* GHashTable<gchar*,
    *     GHashTable<gchar*,
    *         GHashTable<gchar*,gchar*>>>
@@ -98,6 +103,12 @@ ytst_status_get_property (GObject *object,
 
   switch (property_id)
     {
+      case PROP_SESSION:
+        g_value_set_object (value, priv->session);
+        break;
+      case PROP_CONNECTION:
+        g_value_set_object (value, priv->connection);
+        break;
       case PROP_DISCOVERED_STATUSES:
         g_value_set_boxed (value, priv->discovered_statuses);
         break;
@@ -116,13 +127,17 @@ ytst_status_set_property (GObject *object,
     const GValue *value,
     GParamSpec *pspec)
 {
-#if 0
   YtstStatus *self = YTST_STATUS (object);
   YtstStatusPrivate *priv = self->priv;
-#endif
 
   switch (property_id)
     {
+      case PROP_SESSION:
+        priv->session = g_value_dup_object (value);
+        break;
+      case PROP_CONNECTION:
+        priv->connection = g_value_dup_object (value);
+        break;
       default:
         G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
         break;
@@ -157,6 +172,9 @@ ytst_status_dispose (GObject *object)
 
   tp_clear_pointer (&priv->discovered_statuses, g_hash_table_unref);
   tp_clear_pointer (&priv->discovered_services, g_hash_table_unref);
+
+  tp_clear_object (&priv->session);
+  tp_clear_object (&priv->connection);
 
   if (G_OBJECT_CLASS (ytst_status_parent_class)->dispose)
     G_OBJECT_CLASS (ytst_status_parent_class)->dispose (object);
@@ -195,6 +213,24 @@ ytst_status_class_init (YtstStatusClass *klass)
   object_class->constructed = ytst_status_constructed;
   object_class->get_property = ytst_status_get_property;
   object_class->set_property = ytst_status_set_property;
+
+  param_spec = g_param_spec_object (
+      "session",
+      "Session object",
+      "WockySession object",
+      WOCKY_TYPE_SESSION,
+      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
+  g_object_class_install_property (object_class, PROP_SESSION,
+      param_spec);
+
+  param_spec = g_param_spec_object (
+      "connection",
+      "Salut connection",
+      "SalutConnection object",
+      SALUT_TYPE_CONNECTION,
+      G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
+  g_object_class_install_property (object_class, PROP_CONNECTION,
+      param_spec);
 
   param_spec = g_param_spec_boxed (
       "discovered-statuses",
@@ -256,7 +292,11 @@ sidecar_iface_init (SalutSidecarInterface *iface)
  */
 
 YtstStatus *
-ytst_status_new (void)
+ytst_status_new (WockySession *session,
+    SalutConnection *connection)
 {
-  return g_object_new (YTST_TYPE_STATUS, NULL);
+  return g_object_new (YTST_TYPE_STATUS,
+      "session", session,
+      "connection", connection,
+      NULL);
 }
