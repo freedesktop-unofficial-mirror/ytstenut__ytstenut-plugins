@@ -139,7 +139,8 @@ EXTRA_DIST = \
 	yconstants.py \
 	avahitest.py \
 	xmppstream.py \
-	ipv6.py
+	ipv6.py \
+	caps_helper.py
 
 CLEANFILES = \
 	accounts/accounts.cfg \

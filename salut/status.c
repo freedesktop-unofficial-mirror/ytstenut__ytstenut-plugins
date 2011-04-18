@@ -23,12 +23,19 @@
 
 #include "status.h"
 
+#include <string.h>
+
 #include <salut/plugin.h>
 #include <salut/util.h>
 
 #include <telepathy-glib/svc-generic.h>
 
+#include <wocky/wocky-pubsub-helpers.h>
+#include <wocky/wocky-xmpp-reader.h>
+
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
+
+#include "utils.h"
 
 #define DEBUG(msg, ...) \
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
@@ -259,16 +266,101 @@ ytst_status_class_init (YtstStatusClass *klass)
       ytstenut_props);
 }
 
+static WockyNodeTree *
+parse_status_body (const gchar *body,
+    GError **error)
+{
+  WockyXmppReader *reader;
+  WockyNodeTree *tree;
+  GError *err = NULL;
+
+  reader = wocky_xmpp_reader_new_no_stream ();
+  wocky_xmpp_reader_push (reader, (guint8 *) body, strlen (body));
+  tree = WOCKY_NODE_TREE (wocky_xmpp_reader_pop_stanza (reader));
+  g_object_unref (reader);
+
+  if (tree == NULL)
+    {
+      err = wocky_xmpp_reader_get_error (reader);
+      g_set_error (error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
+          "Invalid XML%s%s",
+          err != NULL && err->message != NULL ? ": " : ".",
+          err != NULL && err->message != NULL ? err->message : "");
+      g_clear_error (&err);
+    }
+
+  return tree;
+}
+
 static void
-ytst_status_advertise_status (TpYtsSvcStatus *self,
+ytst_status_advertise_status (TpYtsSvcStatus *svc,
     const gchar *capability,
     const gchar *service_name,
     const gchar *status,
     DBusGMethodInvocation *context)
 {
-  /* TODO: Implement */
+  YtstStatus *self = YTST_STATUS (svc);
+  YtstStatusPrivate *priv = self->priv;
+  WockyNodeTree *status_tree = NULL;
+  GError *error = NULL;
+  WockyStanza *stanza;
+  gchar *node;
+  WockyNode *item, *status_node;
 
-  tp_yts_svc_status_return_from_advertise_status (context);
+  if (tp_str_empty (capability))
+    {
+      g_set_error (&error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+          "Capability argument must be set");
+      goto out;
+    }
+
+  if (tp_str_empty (service_name))
+    {
+      g_set_error (&error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+          "Service name argument must be set");
+      goto out;
+    }
+
+  if (!tp_str_empty (status))
+    {
+      status_tree = parse_status_body (status, &error);
+      if (status_tree == NULL)
+        goto out;
+    }
+  else
+    {
+      status_tree = wocky_node_tree_new ("status", "urn:ytstenut:status",
+          NULL);
+    }
+
+  status_node = wocky_node_tree_get_top_node (status_tree);
+
+  wocky_node_set_attribute (status_node, "from-service",
+      service_name);
+  wocky_node_set_attribute (status_node, "capability",
+      capability);
+
+  node = g_strdup_printf (CAPS_FEATURE_PREFIX "%s", capability);
+  stanza = wocky_pubsub_make_event_stanza (node,
+      salut_connection_get_name (priv->connection), &item);
+  g_free (node);
+
+  wocky_node_add_node_tree (item, status_tree);
+  g_object_unref (status_tree);
+
+  salut_send_ll_pep_event (priv->session, stanza);
+  g_object_unref (stanza);
+
+out:
+  if (error == NULL)
+    {
+      tp_yts_svc_status_return_from_advertise_status (context);
+    }
+  else
+    {
+      dbus_g_method_return_error (context, error);
+      g_clear_error (&error);
+    }
 }
 
 static void
