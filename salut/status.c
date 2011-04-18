@@ -32,6 +32,7 @@
 
 #include <wocky/wocky-pubsub-helpers.h>
 #include <wocky/wocky-xmpp-reader.h>
+#include <wocky/wocky-xmpp-writer.h>
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
@@ -66,6 +67,8 @@ struct _YtstStatusPrivate
 {
   WockySession *session;
   SalutConnection *connection;
+
+  guint handler_id;
 
   /* GHashTable<gchar*,
    *     GHashTable<gchar*,
@@ -151,17 +154,93 @@ ytst_status_set_property (GObject *object,
     }
 }
 
+static gchar *
+get_node_body (WockyNode *node)
+{
+  WockyXmppWriter *writer;
+  WockyNodeTree *tree;
+  const guint8 *output;
+  gsize length;
+  gchar *result;
+
+  writer = wocky_xmpp_writer_new_no_stream ();
+  tree = wocky_node_tree_new_from_node (node);
+  wocky_xmpp_writer_write_node_tree (writer, tree, &output, &length);
+  result = g_strndup ((const gchar*) output, length);
+  g_object_unref (writer);
+  g_object_unref (tree);
+
+  return result;
+}
+
+static gboolean
+pep_event_cb (WockyPorter *porter,
+    WockyStanza *stanza,
+    gpointer user_data)
+{
+  YtstStatus *self = user_data;
+  WockyNode *message, *event, *items, *item, *status;
+  gchar *status_str;
+  const gchar *from, *capability, *service_name;
+
+  message = wocky_stanza_get_top_node (stanza);
+
+  event = wocky_node_get_first_child (message);
+
+  if (event == NULL || tp_strdiff (event->name, "event"))
+    return FALSE;
+
+  items = wocky_node_get_first_child (event);
+  if (items == NULL || tp_strdiff (items->name, "items"))
+    return TRUE;
+
+  if (!g_str_has_prefix (wocky_node_get_ns (items), CAPS_FEATURE_PREFIX))
+    return FALSE;
+
+  item = wocky_node_get_first_child (items);
+  if (item == NULL || tp_strdiff (item->name, "item"))
+    return FALSE;
+
+  status = wocky_node_get_first_child (item);
+  if (status == NULL || tp_strdiff (status->name, "status"))
+    return FALSE;
+
+  /* looks good */
+
+  from = wocky_stanza_get_from (stanza);
+  capability = wocky_node_get_ns (items) + strlen (CAPS_FEATURE_PREFIX);
+  service_name = wocky_node_get_attribute (status, "from-service");
+
+  status_str = get_node_body (status);
+
+  tp_yts_svc_status_emit_status_changed (self, from, capability,
+      service_name, status_str);
+
+  g_free (status_str);
+
+  return TRUE;
+}
+
 static void
 ytst_status_constructed (GObject *object)
 {
   YtstStatus *self = YTST_STATUS (object);
   YtstStatusPrivate *priv = self->priv;
+  WockyPorter *porter;
 
   priv->discovered_statuses = g_hash_table_new_full (g_str_hash, g_str_equal,
       g_free, (GDestroyNotify) g_hash_table_unref);
 
   priv->discovered_services = g_hash_table_new_full (g_str_hash, g_str_equal,
       g_free, (GDestroyNotify) g_hash_table_unref);
+
+  porter = wocky_session_get_porter (priv->session);
+  priv->handler_id = wocky_porter_register_handler_from_anyone (
+      porter, WOCKY_STANZA_TYPE_MESSAGE, WOCKY_STANZA_SUB_TYPE_HEADLINE,
+      WOCKY_PORTER_HANDLER_PRIORITY_MAX, pep_event_cb, self,
+      '(', "event",
+        ':', "http://jabber.org/protocol/pubsub#event",
+      ')', NULL);
 }
 
 static void
@@ -169,6 +248,7 @@ ytst_status_dispose (GObject *object)
 {
   YtstStatus *self = YTST_STATUS (object);
   YtstStatusPrivate *priv = self->priv;
+  WockyPorter *porter;
 
   if (priv->dispose_has_run)
     return;
@@ -176,6 +256,10 @@ ytst_status_dispose (GObject *object)
   priv->dispose_has_run = TRUE;
 
   /* release any references held by the object here */
+
+  porter = wocky_session_get_porter (priv->session);
+  wocky_porter_unregister_handler (porter, priv->handler_id);
+  priv->handler_id = 0;
 
   tp_clear_pointer (&priv->discovered_statuses, g_hash_table_unref);
   tp_clear_pointer (&priv->discovered_services, g_hash_table_unref);

@@ -17,7 +17,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
-from salutservicetest import call_async, EventPattern, assertEquals, ProxyWrapper
+from salutservicetest import call_async, EventPattern, assertEquals, \
+    ProxyWrapper, assertNotEquals
 from saluttest import exec_test, wait_for_contact_in_publish, make_result_iq
 import salutconstants as cs
 import yconstants as ycs
@@ -25,6 +26,7 @@ from caps_helper import *
 
 from twisted.words.xish import xpath
 from twisted.words.xish.domish import Element
+from twisted.words.xish import domish
 
 from avahitest import AvahiAnnouncer, AvahiListener
 from avahitest import get_host_name
@@ -102,11 +104,13 @@ def test(q, bus, conn):
     desc['xml:lang'] = 'en-GB'
 
     call_async(q, status, 'AdvertiseStatus', CAP_NAME,
-               'ants.in.their.hole', el.toXml())
+               'ants.in.their.pants', el.toXml())
 
-    e, _ = q.expect_many(EventPattern('stream-message', connection=incoming),
-                         EventPattern('dbus-return', method='AdvertiseStatus'))
+    e, _, sig = q.expect_many(EventPattern('stream-message', connection=incoming),
+                              EventPattern('dbus-return', method='AdvertiseStatus'),
+                              EventPattern('dbus-signal', signal='StatusChanged'))
 
+    # check message
     message = e.stanza
     event = message.children[0]
     items = event.children[0]
@@ -115,14 +119,21 @@ def test(q, bus, conn):
 
     assertEquals('status', status_el.name)
     assertEquals('messing-with-your-stuff', status_el['activity'])
-    assertEquals('ants.in.their.hole', status_el['from-service'])
+    assertEquals('ants.in.their.pants', status_el['from-service'])
     assertEquals(CAP_NAME, status_el['capability'])
 
-    call_async(q, status, 'AdvertiseStatus', CAP_NAME,
-               'ants.in.their.hole', '')
+    # check signal
+    contact_id, capability, service_name, status_str = sig.args
+    assertEquals(CAP_NAME, capability)
+    assertEquals('ants.in.their.pants', service_name)
+    assertNotEquals('', status_str)
 
-    e, _ = q.expect_many(EventPattern('stream-message', connection=incoming),
-                         EventPattern('dbus-return', method='AdvertiseStatus'))
+    call_async(q, status, 'AdvertiseStatus', CAP_NAME,
+               'ants.in.their.pants', '')
+
+    e, _, sig = q.expect_many(EventPattern('stream-message', connection=incoming),
+                              EventPattern('dbus-return', method='AdvertiseStatus'),
+                              EventPattern('dbus-signal', signal='StatusChanged'))
 
     message = e.stanza
     event = message.children[0]
@@ -131,8 +142,7 @@ def test(q, bus, conn):
     status_el = item.children[0]
 
     assertEquals('status', status_el.name)
-
-    assertEquals('ants.in.their.hole', status_el['from-service'])
+    assertEquals('ants.in.their.pants', status_el['from-service'])
     assertEquals(CAP_NAME, status_el['capability'])
     assert 'activity' not in status_el.attributes
     assertEquals([], status_el.children)
