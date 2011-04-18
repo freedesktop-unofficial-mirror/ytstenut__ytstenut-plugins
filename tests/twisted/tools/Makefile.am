@@ -3,7 +3,7 @@ service_in_files = \
 	org.freedesktop.Telepathy.MissionControl5.service.in \
 	org.freedesktop.Telepathy.Client.Logger.service.in \
 	org.freedesktop.Telepathy.ConnectionManager.salut.service.in
-service_files = $(service_in_files:.conf.in=.conf)
+service_files = $(service_in_files:.service.in=.service)
 
 # D-Bus config file for testing
 conf_in_files = tmp-session-bus.conf.in
