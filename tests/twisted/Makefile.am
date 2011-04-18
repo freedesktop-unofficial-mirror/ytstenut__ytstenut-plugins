@@ -59,6 +59,7 @@ check-twisted:
 	$(MAKE) -C tools
 	rm -f tools/core
 	rm -f tools/missioncontrol-*.log
+	rm -f tools/salut-testing.log
 	mkdir tmp-$$$$ && { \
 		$(MAKE) check-combined TMPSUFFIX=$$$$; \
 		e=$$?; \
