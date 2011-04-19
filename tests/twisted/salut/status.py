@@ -141,7 +141,47 @@ def test(q, bus, conn):
     assertEquals({'testsuite@testsuite': {CAP_NAME: {'ants.in.their.pants': status_str}}},
                  discovered)
 
-    # unset the status
+    # set another
+    el = Element(('urn:ytstenut:status', 'status'))
+    el['activity'] = 'rofling'
+    desc = el.addElement('ytstenut:description', content='U MAD?')
+    desc['xml:lang'] = 'en-GB'
+
+    call_async(q, status, 'AdvertiseStatus', CAP_NAME,
+               'bananaman.on.holiday', el.toXml())
+
+    e, _, sig = q.expect_many(EventPattern('stream-message', connection=incoming),
+                              EventPattern('dbus-return', method='AdvertiseStatus'),
+                              EventPattern('dbus-signal', signal='StatusChanged',
+                                           interface=ycs.STATUS_IFACE))
+
+    # check message
+    message = e.stanza
+    event = message.children[0]
+    items = event.children[0]
+    item = items.children[0]
+    status_el = item.children[0]
+
+    assertEquals('status', status_el.name)
+    assertEquals('rofling', status_el['activity'])
+    assertEquals('bananaman.on.holiday', status_el['from-service'])
+    assertEquals(CAP_NAME, status_el['capability'])
+
+    # check signal
+    contact_id, capability, service_name, bananaman_status_str = sig.args
+    assertEquals(CAP_NAME, capability)
+    assertEquals('bananaman.on.holiday', service_name)
+    assertNotEquals('', bananaman_status_str)
+
+    # check property
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredStatuses',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({'testsuite@testsuite': {CAP_NAME: {
+                    'ants.in.their.pants': status_str,
+                    'bananaman.on.holiday': bananaman_status_str}}},
+                 discovered)
+
+    # unset the status from one service
     call_async(q, status, 'AdvertiseStatus', CAP_NAME,
                'ants.in.their.pants', '')
 
@@ -167,6 +207,41 @@ def test(q, bus, conn):
     contact_id, capability, service_name, status_str = sig.args
     assertEquals(CAP_NAME, capability)
     assertEquals('ants.in.their.pants', service_name)
+    assertEquals('', status_str)
+
+    # check property
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredStatuses',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({'testsuite@testsuite': {CAP_NAME: {
+                    'bananaman.on.holiday': bananaman_status_str}}},
+                 discovered)
+
+    # unset the status from the other service
+    call_async(q, status, 'AdvertiseStatus', CAP_NAME,
+               'bananaman.on.holiday', '')
+
+    e, _, sig = q.expect_many(EventPattern('stream-message', connection=incoming),
+                              EventPattern('dbus-return', method='AdvertiseStatus'),
+                              EventPattern('dbus-signal', signal='StatusChanged',
+                                           interface=ycs.STATUS_IFACE))
+
+    # check message
+    message = e.stanza
+    event = message.children[0]
+    items = event.children[0]
+    item = items.children[0]
+    status_el = item.children[0]
+
+    assertEquals('status', status_el.name)
+    assertEquals('bananaman.on.holiday', status_el['from-service'])
+    assertEquals(CAP_NAME, status_el['capability'])
+    assert 'activity' not in status_el.attributes
+    assertEquals([], status_el.children)
+
+    # check signal
+    contact_id, capability, service_name, status_str = sig.args
+    assertEquals(CAP_NAME, capability)
+    assertEquals('bananaman.on.holiday', service_name)
     assertEquals('', status_str)
 
     # check property
