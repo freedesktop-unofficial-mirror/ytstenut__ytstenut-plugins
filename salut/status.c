@@ -163,6 +163,7 @@ update_contact_status (YtstStatus *self,
 {
   YtstStatusPrivate *priv = self->priv;
   const gchar *old_status;
+  gboolean emit = FALSE;
 
   GHashTable *capability_service_map;
   GHashTable *service_status_map;
@@ -190,14 +191,18 @@ update_contact_status (YtstStatus *self,
 
   old_status = g_hash_table_lookup (service_status_map, service_name);
 
-  if (tp_strdiff (old_status, status_str))
-    {
-      tp_yts_svc_status_emit_status_changed (self, from, capability,
-          service_name, status_str);
-    }
+  /* Save this value as old_status will be freed when we call
+   * g_hash_table_insert next and the spec says we need to update the
+   * property before emitting the signal. In reality this wouldn't be
+   * a problem, but let's be nice. */
+  emit = tp_strdiff (old_status, status_str);
 
   g_hash_table_insert (service_status_map, g_strdup (service_name),
       g_strdup (status_str));
+
+  if (emit)
+    tp_yts_svc_status_emit_status_changed (self, from, capability,
+        service_name, status_str);
 }
 
 static gchar *
