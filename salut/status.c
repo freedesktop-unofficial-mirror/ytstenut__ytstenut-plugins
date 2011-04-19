@@ -197,8 +197,23 @@ update_contact_status (YtstStatus *self,
    * a problem, but let's be nice. */
   emit = tp_strdiff (old_status, status_str);
 
-  g_hash_table_insert (service_status_map, g_strdup (service_name),
-      g_strdup (status_str));
+  if (status_str != NULL)
+    {
+      g_hash_table_insert (service_status_map, g_strdup (service_name),
+          g_strdup (status_str));
+    }
+  else
+    {
+      /* remove the service from the service status map */
+      g_hash_table_remove (service_status_map, service_name);
+
+      /* now run along up the hash table cleaning up */
+      if (g_hash_table_size (service_status_map) == 0)
+        g_hash_table_remove (capability_service_map, capability);
+
+      if (g_hash_table_size (capability_service_map) == 0)
+        g_hash_table_remove (priv->discovered_statuses, from);
+    }
 
   if (emit)
     tp_yts_svc_status_emit_status_changed (self, from, capability,

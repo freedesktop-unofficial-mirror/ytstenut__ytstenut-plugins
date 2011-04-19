@@ -172,8 +172,7 @@ def test(q, bus, conn):
     # check property
     discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredStatuses',
                             dbus_interface=dbus.PROPERTIES_IFACE)
-    assertEquals({'testsuite@testsuite': {CAP_NAME: {'ants.in.their.pants': ''}}},
-                 discovered)
+    assertEquals({}, discovered)
 
 if __name__ == '__main__':
     exec_test(test)
