@@ -17,6 +17,8 @@
 # Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 # 02110-1301 USA
 
+import dbus
+
 from salutservicetest import call_async, EventPattern, assertEquals, \
     ProxyWrapper, assertNotEquals
 from saluttest import exec_test, wait_for_contact_in_publish, make_result_iq
@@ -98,6 +100,10 @@ def test(q, bus, conn):
 
     # okay now we know about the contact's caps, we can go ahead
 
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredStatuses',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({}, discovered)
+
     el = Element(('urn:ytstenut:status', 'status'))
     el['activity'] = 'messing-with-your-stuff'
     desc = el.addElement('ytstenut:description', content='Yeah sorry about that')
@@ -108,7 +114,8 @@ def test(q, bus, conn):
 
     e, _, sig = q.expect_many(EventPattern('stream-message', connection=incoming),
                               EventPattern('dbus-return', method='AdvertiseStatus'),
-                              EventPattern('dbus-signal', signal='StatusChanged'))
+                              EventPattern('dbus-signal', signal='StatusChanged',
+                                           interface=ycs.STATUS_IFACE))
 
     # check message
     message = e.stanza
@@ -128,13 +135,22 @@ def test(q, bus, conn):
     assertEquals('ants.in.their.pants', service_name)
     assertNotEquals('', status_str)
 
+    # check property
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredStatuses',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({'testsuite@testsuite': {CAP_NAME: {'ants.in.their.pants': status_str}}},
+                 discovered)
+
+    # unset the status
     call_async(q, status, 'AdvertiseStatus', CAP_NAME,
                'ants.in.their.pants', '')
 
     e, _, sig = q.expect_many(EventPattern('stream-message', connection=incoming),
                               EventPattern('dbus-return', method='AdvertiseStatus'),
-                              EventPattern('dbus-signal', signal='StatusChanged'))
+                              EventPattern('dbus-signal', signal='StatusChanged',
+                                           interface=ycs.STATUS_IFACE))
 
+    # check message
     message = e.stanza
     event = message.children[0]
     items = event.children[0]
@@ -146,6 +162,18 @@ def test(q, bus, conn):
     assertEquals(CAP_NAME, status_el['capability'])
     assert 'activity' not in status_el.attributes
     assertEquals([], status_el.children)
+
+    # check signal
+    contact_id, capability, service_name, status_str = sig.args
+    assertEquals(CAP_NAME, capability)
+    assertEquals('ants.in.their.pants', service_name)
+    assertEquals('', status_str)
+
+    # check property
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredStatuses',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({'testsuite@testsuite': {CAP_NAME: {'ants.in.their.pants': ''}}},
+                 discovered)
 
 if __name__ == '__main__':
     exec_test(test)

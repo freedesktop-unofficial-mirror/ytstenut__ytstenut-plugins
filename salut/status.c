@@ -154,6 +154,52 @@ ytst_status_set_property (GObject *object,
     }
 }
 
+static void
+update_contact_status (YtstStatus *self,
+    const gchar *from,
+    const gchar *capability,
+    const gchar *service_name,
+    const gchar *status_str)
+{
+  YtstStatusPrivate *priv = self->priv;
+  const gchar *old_status;
+
+  GHashTable *capability_service_map;
+  GHashTable *service_status_map;
+
+  capability_service_map = g_hash_table_lookup (priv->discovered_statuses, from);
+
+  if (capability_service_map == NULL)
+    {
+      capability_service_map = g_hash_table_new_full (g_str_hash, g_str_equal,
+          g_free, (GDestroyNotify) g_hash_table_unref);
+      g_hash_table_insert (priv->discovered_statuses, g_strdup (from),
+          capability_service_map);
+    }
+
+  service_status_map = g_hash_table_lookup (capability_service_map,
+      capability);
+
+  if (service_status_map == NULL)
+    {
+      service_status_map = g_hash_table_new_full (g_str_hash, g_str_equal,
+          g_free, g_free);
+      g_hash_table_insert (capability_service_map,
+          g_strdup (capability), service_status_map);
+    }
+
+  old_status = g_hash_table_lookup (service_status_map, service_name);
+
+  if (tp_strdiff (old_status, status_str))
+    {
+      tp_yts_svc_status_emit_status_changed (self, from, capability,
+          service_name, status_str);
+    }
+
+  g_hash_table_insert (service_status_map, g_strdup (service_name),
+      g_strdup (status_str));
+}
+
 static gchar *
 get_node_body (WockyNode *node)
 {
@@ -180,7 +226,7 @@ pep_event_cb (WockyPorter *porter,
 {
   YtstStatus *self = user_data;
   WockyNode *message, *event, *items, *item, *status;
-  gchar *status_str;
+  gchar *status_str = NULL;
   const gchar *from, *capability, *service_name;
 
   message = wocky_stanza_get_top_node (stanza);
@@ -211,10 +257,10 @@ pep_event_cb (WockyPorter *porter,
   capability = wocky_node_get_ns (items) + strlen (CAPS_FEATURE_PREFIX);
   service_name = wocky_node_get_attribute (status, "from-service");
 
-  status_str = get_node_body (status);
+  if (wocky_node_get_attribute (status, "activity") != NULL)
+    status_str = get_node_body (status);
 
-  tp_yts_svc_status_emit_status_changed (self, from, capability,
-      service_name, status_str);
+  update_contact_status (self, from, capability, service_name, status_str);
 
   g_free (status_str);
 
@@ -249,6 +295,8 @@ ytst_status_dispose (GObject *object)
   YtstStatus *self = YTST_STATUS (object);
   YtstStatusPrivate *priv = self->priv;
   WockyPorter *porter;
+
+  g_print ("dispose called\n");
 
   if (priv->dispose_has_run)
     return;
@@ -413,8 +461,7 @@ ytst_status_advertise_status (TpYtsSvcStatus *svc,
     }
   else
     {
-      status_tree = wocky_node_tree_new ("status", "urn:ytstenut:status",
-          NULL);
+      status_tree = wocky_node_tree_new ("status", YTST_STATUS_NS, NULL);
     }
 
   status_node = wocky_node_tree_get_top_node (status_tree);
