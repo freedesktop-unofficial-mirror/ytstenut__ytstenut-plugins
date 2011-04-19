@@ -6,7 +6,8 @@ if WANT_TWISTED_TESTS
 TWISTED_BASIC_TESTS += \
 	mission-control/account.py \
 	salut/sidecar.py \
-	salut/message.py
+	salut/message.py \
+	salut/status.py
 endif
 
 config.py: Makefile
