@@ -63,7 +63,7 @@ def test(q, bus, conn):
     # immediately.
 
     # announce a contact with the right caps
-    ver = compute_caps_hash([], [ycs.CAPABILITIES_PREFIX + CAP_NAME + '+notify'], [])
+    ver = compute_caps_hash([], [ycs.CAPABILITIES_PREFIX + CAP_NAME + '+notify'], {})
     txt_record = { "txtvers": "1", "status": "avail",
         "node": CLIENT_NAME, "ver": ver, "hash": "sha-1"}
     contact_name = "test-status@" + get_host_name()
