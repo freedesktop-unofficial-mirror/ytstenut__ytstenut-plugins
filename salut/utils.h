@@ -28,6 +28,7 @@ G_BEGIN_DECLS
 
 #define YTST_MESSAGE_NS "urn:ytstenut:message"
 #define YTST_STATUS_NS "urn:ytstenut:status"
+#define YTST_CAPABILITIES_NS "urn:ytstenut:capabilities"
 
 GQuark ytst_message_error_quark (void);
 #define YTST_MESSAGE_ERROR (ytst_message_error_quark ())
@@ -43,7 +44,8 @@ typedef enum {
   YTST_MESSAGE_ERROR_ITEM_NOT_FOUND,
 } YtstMessageError;
 
-#define CAPS_FEATURE_PREFIX "urn:ytstenut:capabilities:"
+#define CAPS_FEATURE_PREFIX YTST_CAPABILITIES_NS ":"
+#define SERVICE_PREFIX YTST_CAPABILITIES_NS "#"
 
 gint ytst_message_error_type_to_wocky (guint ytstenut_type);
 
