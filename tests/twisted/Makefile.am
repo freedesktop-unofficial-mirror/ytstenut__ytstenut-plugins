@@ -7,7 +7,8 @@ TWISTED_BASIC_TESTS += \
 	mission-control/account.py \
 	salut/sidecar.py \
 	salut/message.py \
-	salut/status.py
+	salut/status.py \
+	salut/service.py
 endif
 
 config.py: Makefile

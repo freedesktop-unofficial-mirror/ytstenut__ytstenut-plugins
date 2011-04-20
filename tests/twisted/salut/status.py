@@ -38,6 +38,11 @@ CAP_NAME = 'h264-over-ants'
 CLIENT_NAME = 'fake-client'
 
 def test(q, bus, conn):
+    # we won't be using any data forms, so these two shouldn't ever be
+    # fired.
+    q.forbid_events([EventPattern('dbus-signal', signal='ServiceAdded'),
+                     EventPattern('dbus-signal', signal='ServiceRemoved')])
+
     call_async(q, conn.Future, 'EnsureSidecar', ycs.STATUS_IFACE)
 
     conn.Connect()

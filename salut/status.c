@@ -29,10 +29,13 @@
 #include <salut/util.h>
 
 #include <telepathy-glib/svc-generic.h>
+#include <telepathy-glib/gtypes.h>
 
 #include <wocky/wocky-pubsub-helpers.h>
 #include <wocky/wocky-xmpp-reader.h>
 #include <wocky/wocky-xmpp-writer.h>
+#include <wocky/wocky-xep-0115-capabilities.h>
+#include <wocky/wocky-data-form.h>
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
@@ -69,6 +72,7 @@ struct _YtstStatusPrivate
   SalutConnection *connection;
 
   guint handler_id;
+  gulong capabilities_changed_id;
 
   /* GHashTable<gchar*,
    *     GHashTable<gchar*,
@@ -287,6 +291,188 @@ pep_event_cb (WockyPorter *porter,
   return TRUE;
 }
 
+static GHashTable *
+get_name_map_from_strv (const gchar **strv)
+{
+  GHashTable *out = g_hash_table_new_full (g_str_hash, g_str_equal,
+      g_free, g_free);
+  const gchar **s;
+
+  for (s = strv; s != NULL && *s != NULL; s++)
+    {
+      gchar **parts = g_strsplit (*s, "/", 2);
+
+      g_hash_table_insert (out,
+          g_strdup (parts[0]), g_strdup(parts[1]));
+
+      g_strfreev (parts);
+    }
+
+  return out;
+}
+
+static void
+contact_capabilities_changed (YtstStatus *self,
+    WockyContact *contact,
+    gboolean do_signal)
+{
+  YtstStatusPrivate *priv = self->priv;
+  const GList *data_forms, *l;
+  GHashTable *old, *new;
+  GHashTableIter iter;
+  gpointer key, value;
+  gchar *jid;
+
+  data_forms = wocky_xep_0115_capabilities_get_data_forms (
+      WOCKY_XEP_0115_CAPABILITIES (contact));
+
+  jid = wocky_contact_dup_jid (contact);
+  old = g_hash_table_lookup (priv->discovered_services, jid);
+
+  new = g_hash_table_new_full (g_str_hash, g_str_equal,
+      g_free, (GDestroyNotify) g_value_array_free);
+
+  for (l = data_forms; l != NULL; l = l->next)
+    {
+      WockyDataForm *form = l->data;
+      WockyDataFormField *type, *tmp;
+      const gchar *form_type;
+      const gchar *service;
+      GValueArray *details;
+
+      gchar *yts_service_name;
+      GHashTable *yts_name_map;
+      gchar **yts_caps;
+
+      type = g_hash_table_lookup (form->fields, "FORM_TYPE");
+      form_type = g_value_get_string (type->default_value);
+
+      if (type == NULL
+          || !g_str_has_prefix (form_type, SERVICE_PREFIX))
+        {
+          continue;
+        }
+
+      service = form_type + strlen (SERVICE_PREFIX);
+
+      /* service type */
+      tmp = g_hash_table_lookup (form->fields, "type");
+      if (tmp == NULL)
+        continue;
+      yts_service_name = g_value_dup_string (tmp->default_value);
+
+      /* name map */
+      tmp = g_hash_table_lookup (form->fields, "name");
+      if (tmp == NULL)
+        {
+          g_free (yts_service_name);
+          continue;
+        }
+
+      yts_name_map = get_name_map_from_strv (
+          g_value_get_boxed (tmp->default_value));
+
+      /* caps */
+      tmp = g_hash_table_lookup (form->fields, "capabilities");
+      if (tmp == NULL)
+        {
+          g_free (yts_service_name);
+          g_hash_table_unref (yts_name_map);
+          continue;
+        }
+
+      yts_caps = g_strdupv (tmp->raw_value_contents);
+
+      /* now build the value array and add it to the new hash table */
+      details = tp_value_array_build (3,
+          G_TYPE_STRING, yts_service_name,
+          TP_HASH_TYPE_STRING_STRING_MAP, yts_name_map,
+          G_TYPE_STRV, yts_caps,
+          G_TYPE_INVALID);
+
+      g_hash_table_insert (new, g_strdup (service), details);
+    }
+
+  if (do_signal)
+    {
+      /* first check for services in old but not in new; they've been
+       * removed. old can be NULL. */
+      if (old != NULL)
+        {
+          g_hash_table_iter_init (&iter, old);
+          while (g_hash_table_iter_next (&iter, &key, NULL))
+            {
+              if (g_hash_table_lookup (new, key) == NULL)
+                tp_yts_svc_status_emit_service_removed (self, jid, key);
+            }
+        }
+
+      /* next check for services in new but not in old; they've been
+       * added */
+      g_hash_table_iter_init (&iter, new);
+      while (g_hash_table_iter_next (&iter, &key, &value))
+        {
+          if (old == NULL || g_hash_table_lookup (old, key) == NULL)
+            tp_yts_svc_status_emit_service_added (self, jid, key, value);
+        }
+    }
+
+  if (g_hash_table_size (new) > 0)
+    {
+      g_hash_table_replace (priv->discovered_services,
+          g_strdup (jid), new);
+    }
+  else
+    {
+      g_hash_table_remove (priv->discovered_services, jid);
+      g_hash_table_unref (new);
+    }
+
+  g_free (jid);
+}
+
+static gboolean
+capabilities_changed_cb (GSignalInvocationHint *ihint,
+    guint n_param_values,
+    const GValue *param_values,
+    gpointer user_data)
+{
+  YtstStatus *self = YTST_STATUS (user_data);
+  WockyContact *contact = g_value_get_object (param_values);
+
+  contact_capabilities_changed (self, contact, TRUE);
+
+  return TRUE;
+}
+
+static gboolean
+capabilities_idle_cb (gpointer data)
+{
+  YtstStatus *self = YTST_STATUS (data);
+  YtstStatusPrivate *priv = self->priv;
+  WockyContactFactory *factory;
+  GList *contacts, *l;
+
+  /* connect to all capabilities-changed signals */
+  priv->capabilities_changed_id = g_signal_add_emission_hook (
+      g_signal_lookup ("capabilities-changed", WOCKY_TYPE_XEP_0115_CAPABILITIES),
+      0, capabilities_changed_cb, self, NULL);
+
+  /* and now look through all the contacts that had caps before this
+   * sidecar was ensured */
+  factory = wocky_session_get_contact_factory (priv->session);
+  contacts = wocky_contact_factory_get_ll_contacts (factory);
+
+  for (l = contacts; l != NULL; l = l->next)
+    {
+      contact_capabilities_changed (self, l->data, FALSE);
+    }
+
+  g_list_free (contacts);
+
+  return FALSE;
+}
+
 static void
 ytst_status_constructed (GObject *object)
 {
@@ -307,6 +493,14 @@ ytst_status_constructed (GObject *object)
       '(', "event",
         ':', "http://jabber.org/protocol/pubsub#event",
       ')', NULL);
+
+  /* we need an idle for this otherwise the g_signal_lookup fails
+   * giving this (not entirely sure why):
+   *
+   *   unable to lookup signal "capabilities-changed" for non
+   *   instantiatable type `WockyXep0115Capabilities'
+   */
+  g_idle_add (capabilities_idle_cb, self);
 }
 
 static void
@@ -326,6 +520,11 @@ ytst_status_dispose (GObject *object)
   porter = wocky_session_get_porter (priv->session);
   wocky_porter_unregister_handler (porter, priv->handler_id);
   priv->handler_id = 0;
+
+  if (priv->capabilities_changed_id > 0)
+    g_signal_remove_emission_hook (
+        g_signal_lookup ("capabilities-changed", WOCKY_TYPE_XEP_0115_CAPABILITIES),
+        priv->capabilities_changed_id);
 
   tp_clear_pointer (&priv->discovered_statuses, g_hash_table_unref);
   tp_clear_pointer (&priv->discovered_services, g_hash_table_unref);
