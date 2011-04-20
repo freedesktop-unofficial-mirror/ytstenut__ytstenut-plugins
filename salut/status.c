@@ -316,8 +316,6 @@ ytst_status_dispose (GObject *object)
   YtstStatusPrivate *priv = self->priv;
   WockyPorter *porter;
 
-  g_print ("dispose called\n");
-
   if (priv->dispose_has_run)
     return;
 
