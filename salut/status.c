@@ -313,11 +313,12 @@ get_name_map_from_strv (const gchar **strv)
 
 static void
 contact_capabilities_changed (YtstStatus *self,
-    WockyContact *contact,
+    gpointer contact,
     gboolean do_signal)
 {
   YtstStatusPrivate *priv = self->priv;
-  const GList *data_forms, *l;
+  const GPtrArray *data_forms;
+  guint i;
   GHashTable *old, *new;
   GHashTableIter iter;
   gpointer key, value;
@@ -326,15 +327,23 @@ contact_capabilities_changed (YtstStatus *self,
   data_forms = wocky_xep_0115_capabilities_get_data_forms (
       WOCKY_XEP_0115_CAPABILITIES (contact));
 
-  jid = wocky_contact_dup_jid (contact);
+  /* A bit of a hack: both SalutContact and SalutSelf implement
+   * WockyXep0115Capabilities, so contact could be either one. We only
+   * need the contact jid, so let's just check whether it's a
+   * WockyContact or not then. */
+  if (WOCKY_IS_CONTACT (contact))
+    jid = wocky_contact_dup_jid (WOCKY_CONTACT (contact));
+  else
+    jid = g_strdup (wocky_session_get_jid (priv->session));
+
   old = g_hash_table_lookup (priv->discovered_services, jid);
 
   new = g_hash_table_new_full (g_str_hash, g_str_equal,
       g_free, (GDestroyNotify) g_value_array_free);
 
-  for (l = data_forms; l != NULL; l = l->next)
+  for (i = 0; i < data_forms->len; i++)
     {
-      WockyDataForm *form = l->data;
+      WockyDataForm *form = g_ptr_array_index (data_forms, i);
       WockyDataFormField *type, *tmp;
       const gchar *form_type;
       const gchar *service;
@@ -438,9 +447,9 @@ capabilities_changed_cb (GSignalInvocationHint *ihint,
     gpointer user_data)
 {
   YtstStatus *self = YTST_STATUS (user_data);
-  WockyContact *contact = g_value_get_object (param_values);
 
-  contact_capabilities_changed (self, contact, TRUE);
+  contact_capabilities_changed (self,
+      g_value_get_object (param_values), TRUE);
 
   return TRUE;
 }
@@ -500,7 +509,8 @@ ytst_status_constructed (GObject *object)
    *   unable to lookup signal "capabilities-changed" for non
    *   instantiatable type `WockyXep0115Capabilities'
    */
-  g_idle_add (capabilities_idle_cb, self);
+  g_idle_add_full (G_PRIORITY_HIGH_IDLE, capabilities_idle_cb,
+      self, NULL);
 }
 
 static void
