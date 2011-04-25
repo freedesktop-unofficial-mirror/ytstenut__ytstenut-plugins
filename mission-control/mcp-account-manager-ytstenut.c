@@ -81,6 +81,8 @@ static const Parameter account_parameters[] = {
     { "Enabled", "true" },
 
     { "param-account", "automatic" },
+    { "param-first-name", "First Name" },
+    { "param-last-name", "Last Name" },
 };
 
 static const Parameter account_translated_parameters[] = {
