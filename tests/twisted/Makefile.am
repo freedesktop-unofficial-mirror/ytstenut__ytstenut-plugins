@@ -8,7 +8,8 @@ TWISTED_BASIC_TESTS += \
 	salut/sidecar.py \
 	salut/message.py \
 	salut/status.py \
-	salut/service.py
+	salut/service.py \
+	salut/hct.py
 endif
 
 config.py: Makefile
