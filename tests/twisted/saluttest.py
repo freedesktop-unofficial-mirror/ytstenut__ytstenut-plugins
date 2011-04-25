@@ -14,6 +14,7 @@ from salutservicetest import call_async, EventPattern
 from twisted.internet import reactor
 import salutconstants as cs
 from twisted.words.protocols.jabber.client import IQ
+from twisted.words.xish import domish, xpath
 import ns
 
 import dbus
@@ -208,6 +209,16 @@ def wait_for_contact_in_publish(q, bus, conn, contact_name):
                 handle = h
 
     return handle
+
+def _elem_add(elem, *children):
+    for child in children:
+        if isinstance(child, domish.Element):
+            elem.addChild(child)
+        elif isinstance(child, unicode):
+            elem.addContent(child)
+        else:
+            raise ValueError(
+                'invalid child object %r (must be element or unicode)', child)
 
 def elem(a, b=None, attrs={}, **kw):
     r"""
