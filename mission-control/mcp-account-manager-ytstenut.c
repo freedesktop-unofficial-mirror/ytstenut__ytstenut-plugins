@@ -76,7 +76,7 @@ typedef struct {
 static const Parameter account_parameters[] = {
     { "manager", "salut" },
     { "protocol", "local-ytstenut" },
-    { "ConnectAutomatically", "true" },
+    { "ConnectAutomatically", "false" },
     { "Hidden", "true" },
     { "Enabled", "true" },
 
