@@ -26,6 +26,7 @@
 G_BEGIN_DECLS
 
 typedef struct _YtstCapsManagerClass YtstCapsManagerClass;
+typedef struct _YtstCapsManagerPrivate YtstCapsManagerPrivate;
 typedef struct _YtstCapsManager YtstCapsManager;
 
 struct _YtstCapsManagerClass
@@ -36,6 +37,8 @@ struct _YtstCapsManagerClass
 struct _YtstCapsManager
 {
   GObject parent;
+
+  YtstCapsManagerPrivate *priv;
 };
 
 GType ytst_caps_manager_get_type (void);

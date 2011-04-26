@@ -18,9 +18,10 @@
 # 02110-1301 USA
 
 import avahi
+import dbus
 
 from salutservicetest import call_async, EventPattern, assertEquals, \
-    assertLength, assertContains
+    assertLength, assertContains, sync_dbus, ProxyWrapper
 from saluttest import exec_test, elem_iq, elem
 from avahitest import AvahiAnnouncer, AvahiListener, txt_get_key, get_host_name
 from xmppstream import connect_to_stream
@@ -39,6 +40,13 @@ def test(q, bus, conn):
     e = q.expect('dbus-return', method='EnsureSidecar')
     path, props = e.value
     assertEquals({}, props)
+
+    status = ProxyWrapper(bus.get_object(conn.bus_name, path),
+                          ycs.STATUS_IFACE, {})
+
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredServices',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({}, discovered)
 
     self_handle = conn.GetSelfHandle()
     self_handle_name =  conn.InspectHandles(cs.HT_CONTACT, [self_handle])[0]
@@ -120,6 +128,71 @@ def test(q, bus, conn):
             assertContains('urn:ytstenut:data:jingle:rtp', caps)
         else:
             assert False
+
+    # now add another service
+    forbidden = [EventPattern('dbus-signal', signal='ServiceRemoved')]
+    q.forbid_events(forbidden)
+
+    conn.ContactCapabilities.UpdateCapabilities([
+        ('another.nice.gname', [],
+         ['com.meego.xpmn.ytstenut.Channel/uid/org.gnome.Eog',
+          'com.meego.xpmn.ytstenut.Channel/type/application',
+          'com.meego.xpmn.ytstenut.Channel/name/en_GB/Eye Of Gnome',
+          'com.meego.xpmn.ytstenut.Channel/name/it/Occhio Di uno Gnomo',
+          'com.meego.xpmn.ytstenut.Channel/caps/urn:ytstenut:capabilities:yts-picz'])])
+
+    e = q.expect('dbus-signal', signal='ServiceAdded')
+
+    sync_dbus(bus, q, conn)
+
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredServices',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({'testsuite@testsuite':
+                      {'org.gnome.Banshee': ('application',
+                                             {'en_GB': 'Banshee Media Player',
+                                              'fr': 'Banshee Lecteur de Musique'},
+                                             ['urn:ytstenut:capabilities:yts-caps-audio',
+                                              'urn:ytstenut:data:jingle:rtp']),
+                       'org.gnome.Eog': ('application',
+                                         {'en_GB': 'Eye Of Gnome',
+                                          'it': 'Occhio Di uno Gnomo'},
+                                         ['urn:ytstenut:capabilities:yts-picz'])}},
+                 discovered)
+
+    q.unforbid_events(forbidden)
+
+    forbidden = [EventPattern('dbus-signal', signal='ServiceRemoved',
+                              args=[self_handle_name, 'org.gnome.Eog'])]
+    q.forbid_events(forbidden)
+
+    conn.ContactCapabilities.UpdateCapabilities([
+            ('well.gnome.name', [], [])])
+
+    e = q.expect('dbus-signal', signal='ServiceRemoved',
+                 args=[self_handle_name, 'org.gnome.Banshee'])
+
+    sync_dbus(bus, q, conn)
+
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredServices',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({'testsuite@testsuite':
+                      {'org.gnome.Eog': ('application',
+                                         {'en_GB': 'Eye Of Gnome',
+                                          'it': 'Occhio Di uno Gnomo'},
+                                         ['urn:ytstenut:capabilities:yts-picz'])}},
+                 discovered)
+
+    q.unforbid_events(forbidden)
+
+    conn.ContactCapabilities.UpdateCapabilities([
+            ('another.nice.gname', [], [])])
+
+    e = q.expect('dbus-signal', signal='ServiceRemoved',
+                 args=[self_handle_name, 'org.gnome.Eog'])
+
+    discovered = status.Get(ycs.STATUS_IFACE, 'DiscoveredServices',
+                            dbus_interface=dbus.PROPERTIES_IFACE)
+    assertEquals({}, discovered)
 
 if __name__ == '__main__':
     exec_test(test)

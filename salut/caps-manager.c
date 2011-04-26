@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include <telepathy-glib/channel-manager.h>
+#include <telepathy-glib/util.h>
 
 #include <wocky/wocky-data-form.h>
 #include <wocky/wocky-namespaces.h>
@@ -51,14 +52,42 @@ G_DEFINE_TYPE_WITH_CODE (YtstCapsManager, ytst_caps_manager, G_TYPE_OBJECT,
     G_IMPLEMENT_INTERFACE (GABBLE_TYPE_CAPS_CHANNEL_MANAGER, caps_channel_manager_iface_init);
     )
 
-static void
-ytst_caps_manager_init (YtstCapsManager *object)
+/* private structure */
+struct _YtstCapsManagerPrivate
 {
+  GHashTable *services;
+};
+
+static void
+ytst_caps_manager_init (YtstCapsManager *self)
+{
+  YtstCapsManagerPrivate *priv = G_TYPE_INSTANCE_GET_PRIVATE (self,
+      YTST_TYPE_CAPS_MANAGER, YtstCapsManagerPrivate);
+  self->priv = priv;
+
+  priv->services = g_hash_table_new_full (g_str_hash, g_str_equal,
+      g_free, g_object_unref);
+}
+
+static void
+ytst_caps_manager_dispose (GObject *object)
+{
+  YtstCapsManager *self = YTST_CAPS_MANAGER (object);
+
+  tp_clear_pointer (&(self->priv->services), g_hash_table_unref);
+
+  if (G_OBJECT_CLASS (ytst_caps_manager_parent_class)->dispose)
+    G_OBJECT_CLASS (ytst_caps_manager_parent_class)->dispose (object);
 }
 
 static void
 ytst_caps_manager_class_init (YtstCapsManagerClass *klass)
 {
+  GObjectClass *oclass = G_OBJECT_CLASS (klass);
+
+  oclass->dispose = ytst_caps_manager_dispose;
+
+  g_type_class_add_private (klass, sizeof (YtstCapsManagerPrivate));
 }
 
 static void
@@ -126,6 +155,14 @@ make_new_data_form (const gchar *uid,
 }
 
 static void
+add_to_array (gpointer key,
+    gpointer value,
+    gpointer user_data)
+{
+  g_ptr_array_add (user_data, g_object_ref (value));
+}
+
+static void
 ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
     const gchar *client_name,
     const GPtrArray *filters,
@@ -133,9 +170,10 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
     GabbleCapabilitySet *cap_set,
     GPtrArray *data_forms)
 {
+  YtstCapsManager *self = YTST_CAPS_MANAGER (manager);
+  YtstCapsManagerPrivate *priv = self->priv;
   const gchar * const *t;
 
-  WockyDataForm *form;
   const gchar *uid = NULL;
   const gchar *yts_type = NULL;
   GPtrArray *names = g_ptr_array_new ();
@@ -173,9 +211,16 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
 
   if (uid != NULL)
     {
-      form = make_new_data_form (uid, yts_type, names, caps);
-      g_ptr_array_add (data_forms, form);
+      g_hash_table_insert (priv->services,
+          g_strdup (client_name),
+          make_new_data_form (uid, yts_type, names, caps));
     }
+  else
+    {
+      g_hash_table_remove (priv->services, client_name);
+    }
+
+  g_hash_table_foreach (priv->services, add_to_array, data_forms);
 
   g_ptr_array_unref (names);
   g_ptr_array_unref (caps);
