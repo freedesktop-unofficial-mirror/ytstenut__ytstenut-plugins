@@ -230,7 +230,7 @@ channel_message_stanza_callback (GObject *source_object,
       g_assert (core_error != NULL);
       tp_yts_svc_channel_emit_failed (self,
           ytst_message_error_type_from_wocky (error_type),
-          wocky_enum_to_nick (WOCKY_TYPE_XMPP_ERROR_TYPE, core_error->code),
+          wocky_enum_to_nick (WOCKY_TYPE_XMPP_ERROR, core_error->code),
           specialized_node ? specialized_node->name : "",
           core_error->message ? core_error->message : "");
       g_clear_error (&core_error);
