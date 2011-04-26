@@ -139,13 +139,19 @@ make_new_data_form (const gchar *uid,
 
   /* do the next two by hand as we'll need to add the values
    * manually */
-  tmp = wocky_node_add_child (node, "field");
-  wocky_node_set_attribute (tmp, "var", "name");
-  g_ptr_array_foreach (names, add_value_to_field, tmp);
+  if (names->len > 0)
+    {
+      tmp = wocky_node_add_child (node, "field");
+      wocky_node_set_attribute (tmp, "var", "name");
+      g_ptr_array_foreach (names, add_value_to_field, tmp);
+    }
 
-  tmp = wocky_node_add_child (node, "field");
-  wocky_node_set_attribute (tmp, "var", "capabilities");
-  g_ptr_array_foreach (caps, add_value_to_field, tmp);
+  if (caps->len > 0)
+    {
+      tmp = wocky_node_add_child (node, "field");
+      wocky_node_set_attribute (tmp, "var", "capabilities");
+      g_ptr_array_foreach (caps, add_value_to_field, tmp);
+    }
 
   out = wocky_data_form_new_from_node (node, NULL);
 
