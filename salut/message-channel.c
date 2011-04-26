@@ -325,6 +325,23 @@ ytst_message_channel_close (TpBaseChannel *chan)
   YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (chan);
   YtstMessageChannelPrivate *priv = self->priv;
 
+  DEBUG ("called\n");
+
+  /* Need to send an item-not-found reply */
+  if (!tp_base_channel_is_requested (chan) && !priv->replied)
+    {
+      TpBaseConnection *conn = tp_base_channel_get_connection (
+          TP_BASE_CHANNEL (self));
+      WockySession *session = salut_connection_get_session (
+          SALUT_CONNECTION (conn));
+
+      wocky_porter_send_iq_error (
+          wocky_session_get_porter (session),
+          priv->request, WOCKY_XMPP_ERROR_ITEM_NOT_FOUND,
+          "channel closed before reply was sent; possibly "
+          "no handler found?");
+    }
+
   if (!g_cancellable_is_cancelled (priv->cancellable))
     g_cancellable_cancel (priv->cancellable);
 
