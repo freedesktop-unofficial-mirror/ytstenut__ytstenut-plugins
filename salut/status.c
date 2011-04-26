@@ -474,7 +474,8 @@ capabilities_idle_cb (gpointer data)
 
   for (l = contacts; l != NULL; l = l->next)
     {
-      contact_capabilities_changed (self, l->data, FALSE);
+      if (WOCKY_IS_XEP_0115_CAPABILITIES (l->data))
+        contact_capabilities_changed (self, l->data, FALSE);
     }
 
   g_list_free (contacts);
