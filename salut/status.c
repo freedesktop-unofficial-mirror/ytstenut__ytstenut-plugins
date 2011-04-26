@@ -372,25 +372,27 @@ contact_capabilities_changed (YtstStatus *self,
 
       /* name map */
       tmp = g_hash_table_lookup (form->fields, "name");
-      if (tmp == NULL)
+      if (tmp != NULL && tmp->default_value != NULL)
         {
-          g_free (yts_service_name);
-          continue;
+          yts_name_map = get_name_map_from_strv (
+              g_value_get_boxed (tmp->default_value));
         }
-
-      yts_name_map = get_name_map_from_strv (
-          g_value_get_boxed (tmp->default_value));
+      else
+        {
+          yts_name_map = g_hash_table_new (g_str_hash, g_str_equal);
+        }
 
       /* caps */
       tmp = g_hash_table_lookup (form->fields, "capabilities");
-      if (tmp == NULL)
+      if (tmp != NULL && tmp->default_value != NULL)
         {
-          g_free (yts_service_name);
-          g_hash_table_unref (yts_name_map);
-          continue;
+          yts_caps = g_strdupv (tmp->raw_value_contents);
         }
-
-      yts_caps = g_strdupv (tmp->raw_value_contents);
+      else
+        {
+          gchar *caps_tmp[] = { NULL };
+          yts_caps = g_strdupv (caps_tmp);
+        }
 
       /* now build the value array and add it to the new hash table */
       details = tp_value_array_build (3,
