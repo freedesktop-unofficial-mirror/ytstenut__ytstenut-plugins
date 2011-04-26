@@ -126,7 +126,8 @@ def outgoing_fail(q, bus, conn):
     reply['id'] = stanza['id']
     error = reply.addElement('error')
     error['type'] = 'cancel'
-    error.addElement((ns.STANZA, 'cancel'))
+    error['code'] = '409'
+    error.addElement((ns.STANZA, 'conflict'))
     error.addElement((ycs.MESSAGE_NS, 'yodawg'))
     text = error.addElement((ns.STANZA, 'text'),
                             content='imma let you finish')
@@ -136,7 +137,7 @@ def outgoing_fail(q, bus, conn):
     e = q.expect('dbus-signal', signal='Failed', path=path)
     error_type, stanza_error_name, yst_error_name, text = e.args
     assertEquals(ycs.ERROR_TYPE_CANCEL, error_type)
-    assertEquals('cancel', stanza_error_name)
+    assertEquals('conflict', stanza_error_name)
     assertEquals('yodawg', yst_error_name)
     assertEquals('imma let you finish', text)
 
