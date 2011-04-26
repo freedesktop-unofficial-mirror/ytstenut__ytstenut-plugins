@@ -402,6 +402,10 @@ contact_capabilities_changed (YtstStatus *self,
           G_TYPE_INVALID);
 
       g_hash_table_insert (new, g_strdup (service), details);
+
+      g_free (yts_service_name);
+      g_hash_table_unref (yts_name_map);
+      g_strfreev (yts_caps);
     }
 
   if (do_signal)
