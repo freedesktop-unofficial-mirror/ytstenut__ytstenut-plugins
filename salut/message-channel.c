@@ -67,7 +67,9 @@ G_DEFINE_TYPE_WITH_CODE (YtstMessageChannel, ytst_message_channel,
 );
 
 static const gchar *ytst_message_channel_interfaces[] = {
-    NULL
+  TP_IFACE_CHANNEL,
+  TP_YTS_IFACE_CHANNEL,
+  NULL
 };
 
 /* properties */
