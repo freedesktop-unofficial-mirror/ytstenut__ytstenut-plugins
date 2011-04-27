@@ -193,7 +193,7 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
       if (g_str_has_prefix (*t, INTERESTED))
         {
           cap = *t + strlen (INTERESTED);
-          feature = g_strdup_printf ("%s%s+notify", CAPS_FEATURE_PREFIX, cap);
+          feature = g_strdup_printf ("%s+notify", cap);
           gabble_capability_set_add (cap_set, feature);
           g_free (feature);
         }

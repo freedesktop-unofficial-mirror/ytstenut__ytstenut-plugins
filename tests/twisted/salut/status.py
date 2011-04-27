@@ -34,7 +34,7 @@ from avahitest import AvahiAnnouncer, AvahiListener
 from avahitest import get_host_name
 from xmppstream import setup_stream_listener, connect_to_stream
 
-CAP_NAME = 'h264-over-ants'
+CAP_NAME = 'urn:ytstenut:capabilities:h264-over-ants'
 CLIENT_NAME = 'fake-client'
 
 def test(q, bus, conn):
@@ -68,7 +68,7 @@ def test(q, bus, conn):
     # immediately.
 
     # announce a contact with the right caps
-    ver = compute_caps_hash([], [ycs.CAPABILITIES_PREFIX + CAP_NAME + '+notify'], {})
+    ver = compute_caps_hash([], [CAP_NAME + '+notify'], {})
     txt_record = { "txtvers": "1", "status": "avail",
         "node": CLIENT_NAME, "ver": ver, "hash": "sha-1"}
     contact_name = "test-status@" + get_host_name()
@@ -96,7 +96,7 @@ def test(q, bus, conn):
     query['node'] = CLIENT_NAME + '#' + ver
 
     feature = query.addElement('feature')
-    feature['var'] = ycs.CAPABILITIES_PREFIX + CAP_NAME + '+notify'
+    feature['var'] = CAP_NAME + '+notify'
     incoming.send(result)
 
     # this will be fired as text channel caps will be fired

@@ -264,9 +264,6 @@ pep_event_cb (WockyPorter *porter,
   if (items == NULL || tp_strdiff (items->name, "items"))
     return TRUE;
 
-  if (!g_str_has_prefix (wocky_node_get_ns (items), CAPS_FEATURE_PREFIX))
-    return FALSE;
-
   item = wocky_node_get_first_child (items);
   if (item == NULL || tp_strdiff (item->name, "item"))
     return FALSE;
@@ -278,7 +275,7 @@ pep_event_cb (WockyPorter *porter,
   /* looks good */
 
   from = wocky_stanza_get_from (stanza);
-  capability = wocky_node_get_ns (items) + strlen (CAPS_FEATURE_PREFIX);
+  capability = wocky_node_get_ns (items);
   service_name = wocky_node_get_attribute (status, "from-service");
 
   if (wocky_node_get_attribute (status, "activity") != NULL)
@@ -670,7 +667,6 @@ ytst_status_advertise_status (TpYtsSvcStatus *svc,
   WockyNodeTree *status_tree = NULL;
   GError *error = NULL;
   WockyStanza *stanza;
-  gchar *node;
   WockyNode *item, *status_node;
 
   if (tp_str_empty (capability))
@@ -705,10 +701,8 @@ ytst_status_advertise_status (TpYtsSvcStatus *svc,
   wocky_node_set_attribute (status_node, "capability",
       capability);
 
-  node = g_strdup_printf (CAPS_FEATURE_PREFIX "%s", capability);
-  stanza = wocky_pubsub_make_event_stanza (node,
+  stanza = wocky_pubsub_make_event_stanza (capability,
       salut_connection_get_name (priv->connection), &item);
-  g_free (node);
 
   wocky_node_add_node_tree (item, status_tree);
   g_object_unref (status_tree);
