@@ -31,7 +31,12 @@
 
 #include <dbus/dbus-glib.h>
 
+#ifdef HAVE_GETTEXT
 #include <glib/gi18n-lib.h>
+#else
+#define gettext(x) (x)
+#define N_(x) (x)
+#endif
 
 #include <telepathy-glib/telepathy-glib.h>
 
