@@ -778,14 +778,11 @@ ytst_message_channel_new (SalutConnection *connection,
     TpHandle initiator,
     gboolean requested)
 {
-  TpBaseConnection *base_conn;
   YtstMessageChannel *channel;
 
   g_return_val_if_fail (SALUT_IS_CONNECTION (connection), NULL);
   g_return_val_if_fail (WOCKY_IS_LL_CONTACT (contact), NULL);
   g_return_val_if_fail (WOCKY_IS_STANZA (request), NULL);
-
-  base_conn = TP_BASE_CONNECTION (connection);
 
   channel = g_object_new (YTST_TYPE_MESSAGE_CHANNEL,
       "connection", connection,
