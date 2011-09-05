@@ -32,7 +32,13 @@
 #include <telepathy-glib/interfaces.h>
 #include <telepathy-glib/util.h>
 
+#include <wocky/wocky-session.h>
+
+#ifdef SALUT
 #include <salut/caps-channel-manager.h>
+#else
+#include <gabble/caps-channel-manager.h>
+#endif
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
@@ -61,7 +67,11 @@ enum
 /* private structure */
 struct _YtstChannelManagerPrivate
 {
+#ifdef SALUT
   SalutConnection *connection;
+#else
+  GabbleConnection *connection;
+#endif
   GQueue *channels;
   gulong status_changed_id;
   guint message_handler_id;
@@ -118,7 +128,9 @@ message_stanza_callback (WockyPorter *porter,
        TP_HANDLE_TYPE_CONTACT);
   YtstMessageChannel *channel;
   TpHandle handle;
+#ifdef SALUT
   WockyContact *contact = wocky_stanza_get_from_contact (stanza);
+#endif
   gchar *jid;
 
   /* needs to be type get or set */
@@ -132,7 +144,11 @@ message_stanza_callback (WockyPorter *porter,
   if (wocky_node_get_attribute (top, "id") == NULL)
     return FALSE;
 
+#ifdef SALUT
   jid = wocky_contact_dup_jid (WOCKY_CONTACT (contact));
+#else
+  jid = g_strdup (wocky_stanza_get_from (stanza));
+#endif
   handle = tp_handle_lookup (handle_repo, jid, NULL, NULL);
   if (handle == 0)
     {
@@ -141,7 +157,12 @@ message_stanza_callback (WockyPorter *porter,
     }
 
   channel = ytst_message_channel_new (priv->connection,
-      WOCKY_LL_CONTACT (contact), stanza, handle, handle, FALSE);
+#ifdef SALUT
+      WOCKY_LL_CONTACT (contact),
+#else
+      jid,
+#endif
+      stanza, handle, handle, FALSE);
   manager_take_ownership_of_channel (self, channel);
   tp_channel_manager_emit_new_channel (self, TP_EXPORTABLE_CHANNEL (channel),
       NULL);
@@ -173,7 +194,7 @@ manager_close_all (YtstChannelManager *self)
 }
 
 static void
-on_connection_status_changed (SalutConnection *conn,
+on_connection_status_changed (TpBaseConnection *conn,
     guint status,
     guint reason,
     YtstChannelManager *self)
@@ -243,7 +264,11 @@ ytst_channel_manager_constructed (GObject *object)
 
   priv->channels = g_queue_new ();
 
+#ifdef SALUT
   session = salut_connection_get_session (priv->connection);
+#else
+  session = gabble_connection_get_session (priv->connection);
+#endif
 
   priv->message_handler_id = wocky_porter_register_handler_from_anyone (
       wocky_session_get_porter (session),
@@ -273,7 +298,11 @@ ytst_channel_manager_dispose (GObject *object)
 
   priv->dispose_has_run = TRUE;
 
+#ifdef SALUT
   session = salut_connection_get_session (priv->connection);
+#else
+  session = gabble_connection_get_session (priv->connection);
+#endif
 
   if (session != NULL)
     {
@@ -304,9 +333,9 @@ ytst_channel_manager_class_init (YtstChannelManagerClass *klass)
 
   param_spec = g_param_spec_object (
       "connection",
-      "SalutConnection object",
-      "Salut connection object that owns this channel factory object.",
-      SALUT_TYPE_CONNECTION,
+      "TpBaseConnection object",
+      "Connection object that owns this channel factory object.",
+      TP_TYPE_BASE_CONNECTION,
       G_PARAM_CONSTRUCT_ONLY |
       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_CONNECTION, param_spec);
@@ -395,9 +424,13 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   TpHandle handle;
   GError *error = NULL;
   const gchar *name;
+#ifdef SALUT
   WockySession *session;
   WockyContactFactory *factory;
   WockyLLContact *contact;
+#else
+  TpHandle self_handle;
+#endif
   WockyStanza *request;
   GSList *tokens = NULL;
   YtstMessageChannel *channel;
@@ -425,6 +458,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   name = tp_handle_inspect (handle_repo, handle);
   DEBUG ("Requested channel for handle: %u (%s)", handle, name);
 
+#ifdef SALUT
   session = salut_connection_get_session (priv->connection);
   factory = wocky_session_get_contact_factory (session);
   contact = wocky_contact_factory_lookup_ll_contact (factory, name);
@@ -434,14 +468,27 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
           "%s is not online", name);
       goto error;
     }
+#else
+  self_handle = tp_base_connection_get_self_handle (base_conn);
+#endif
 
   request = ytst_message_channel_build_request (request_properties,
-      salut_connection_get_name (priv->connection), contact, &error);
+#ifdef SALUT
+      salut_connection_get_name (priv->connection), contact,
+#else
+      tp_handle_inspect (handle_repo, self_handle), name,
+#endif
+      &error);
   if (request == NULL)
     goto error;
 
-  channel = ytst_message_channel_new (priv->connection, contact, request, handle,
-      base_conn->self_handle, TRUE);
+  channel = ytst_message_channel_new (priv->connection,
+#ifdef SALUT
+      contact,
+#else
+      name,
+#endif
+      request, handle, base_conn->self_handle, TRUE);
   manager_take_ownership_of_channel (self, channel);
 
   g_object_unref (request);
@@ -484,7 +531,11 @@ static void
 ytst_caps_channel_manager_iface_init (gpointer g_iface,
     gpointer iface_data)
 {
+#ifdef SALUT /* sigh */
   GabbleCapsChannelManagerIface *iface = g_iface;
+#else
+  GabbleCapsChannelManagerInterface *iface = g_iface;
+#endif
 
   /* we don't need any of these */
   iface->reset_caps = NULL;
@@ -494,7 +545,7 @@ ytst_caps_channel_manager_iface_init (gpointer g_iface,
 
 /* public functions */
 YtstChannelManager *
-ytst_channel_manager_new (SalutConnection *connection)
+ytst_channel_manager_new (TpBaseConnection *connection)
 {
   return g_object_new (YTST_TYPE_CHANNEL_MANAGER,
       "connection", connection,

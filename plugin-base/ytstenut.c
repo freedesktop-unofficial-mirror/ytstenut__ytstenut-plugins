@@ -26,8 +26,12 @@
 #include "status.h"
 #include "channel-manager.h"
 
+#ifdef SALUT
 #include <salut/plugin.h>
 #include <salut/protocol.h>
+#else
+#include <gabble/plugin.h>
+#endif
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
@@ -42,7 +46,11 @@ static const gchar * const sidecar_interfaces[] = {
 static void plugin_iface_init (gpointer g_iface, gpointer data);
 
 G_DEFINE_TYPE_WITH_CODE (YtstPlugin, ytst_plugin, G_TYPE_OBJECT,
+#ifdef SALUT
     G_IMPLEMENT_INTERFACE (SALUT_TYPE_PLUGIN, plugin_iface_init);
+#else
+    G_IMPLEMENT_INTERFACE (GABBLE_TYPE_PLUGIN, plugin_iface_init);
+#endif
     )
 
 static void
@@ -56,6 +64,7 @@ ytst_plugin_class_init (YtstPluginClass *klass)
 {
 }
 
+#ifdef SALUT
 static void
 ytstenut_plugin_initialize (SalutPlugin *plugin,
     TpBaseConnectionManager *connection_manager)
@@ -68,27 +77,49 @@ ytstenut_plugin_initialize (SalutPlugin *plugin,
       "_ytstenut._tcp", "local-ytstenut", "Ytstenut protocol", "im-ytstenut");
   tp_base_connection_manager_add_protocol (connection_manager, protocol);
 }
+#endif
 
 static void
 ytstenut_plugin_create_sidecar (
+#ifdef SALUT
     SalutPlugin *plugin,
+#else
+    GabblePlugin *plugin,
+#endif
     const gchar *sidecar_interface,
+#ifdef SALUT
     SalutConnection *connection,
+#else
+    GabbleConnection *connection,
+#endif
     WockySession *session,
     GAsyncReadyCallback callback,
     gpointer user_data)
 {
   GSimpleAsyncResult *result = g_simple_async_result_new (G_OBJECT (plugin),
       callback, user_data,
-      /* sic: all plugins share salut_plugin_create_sidecar_finish() so we
+      /* sic: all plugins share {salut,gabble}_plugin_create_sidecar_finish() so we
        * need to use the same source tag.
        */
-      salut_plugin_create_sidecar_async);
+#ifdef SALUT
+      salut_plugin_create_sidecar_async
+#else
+      gabble_plugin_create_sidecar
+#endif
+      );
+#ifdef SALUT
   SalutSidecar *sidecar = NULL;
+#else
+  GabbleSidecar *sidecar = NULL;
+#endif
 
   if (!tp_strdiff (sidecar_interface, TP_YTS_IFACE_STATUS))
     {
+#ifdef SALUT
       sidecar = SALUT_SIDECAR (ytst_status_new (session, connection));
+#else
+      sidecar = GABBLE_SIDECAR (ytst_status_new (session, connection));
+#endif
       DEBUG ("created side car for: %s", TP_YTS_IFACE_STATUS);
     }
   else
@@ -105,7 +136,12 @@ ytstenut_plugin_create_sidecar (
 }
 
 static GPtrArray *
-ytstenut_plugin_create_channel_managers (SalutPlugin *plugin,
+ytstenut_plugin_create_channel_managers (
+#ifdef SALUT
+    SalutPlugin *plugin,
+#else
+    GabblePlugin *plugin,
+#endif
     TpBaseConnection *connection)
 {
   GPtrArray *ret = g_ptr_array_sized_new (1);
@@ -113,8 +149,7 @@ ytstenut_plugin_create_channel_managers (SalutPlugin *plugin,
   DEBUG ("%p on connection %p", plugin, connection);
 
   g_ptr_array_add (ret, g_object_new (YTST_TYPE_CAPS_MANAGER, NULL));
-  g_ptr_array_add (ret, ytst_channel_manager_new (
-          SALUT_CONNECTION (connection)));
+  g_ptr_array_add (ret, ytst_channel_manager_new (connection));
 
   return ret;
 }
@@ -123,20 +158,32 @@ static void
 plugin_iface_init (gpointer g_iface,
     gpointer data G_GNUC_UNUSED)
 {
+#ifdef SALUT
   SalutPluginInterface *iface = g_iface;
+#else
+  GabblePluginInterface *iface = g_iface;
+    #endif
 
+#ifdef SALUT
   iface->api_version = SALUT_PLUGIN_CURRENT_VERSION;
+  iface->initialize = ytstenut_plugin_initialize;
+#endif
+
   iface->name = "Ytstenut plugin";
   iface->version = PACKAGE_VERSION;
 
   iface->sidecar_interfaces = sidecar_interfaces;
   iface->create_sidecar = ytstenut_plugin_create_sidecar;
-  iface->initialize = ytstenut_plugin_initialize;
   iface->create_channel_managers = ytstenut_plugin_create_channel_managers;
 }
 
+#ifdef SALUT
 SalutPlugin *
 salut_plugin_create (void)
+#else
+GabblePlugin *
+gabble_plugin_create (void)
+#endif
 {
   return g_object_new (YTST_TYPE_PLUGIN, NULL);
 }

@@ -241,7 +241,11 @@ caps_channel_manager_iface_init (
     gpointer g_iface,
     gpointer data G_GNUC_UNUSED)
 {
+#ifdef SALUT /* sigh */
   GabbleCapsChannelManagerIface *iface = g_iface;
+#else
+  GabbleCapsChannelManagerInterface *iface = g_iface;
+#endif
 
   iface->represent_client = ytst_caps_manager_represent_client;
 }
