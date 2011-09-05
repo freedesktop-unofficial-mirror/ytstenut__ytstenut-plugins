@@ -30,7 +30,11 @@
 #include <wocky/wocky-data-form.h>
 #include <wocky/wocky-namespaces.h>
 
+#ifdef SALUT
 #include <salut/caps-channel-manager.h>
+#else
+#include <gabble/caps-channel-manager.h>
+#endif
 
 #include "utils.h"
 

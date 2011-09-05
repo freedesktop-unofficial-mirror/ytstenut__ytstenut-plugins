@@ -1,5 +1,7 @@
 AM_CFLAGS = \
 	-DG_LOG_DOMAIN=\"ytstenut\" \
+	-DSALUT \
+	-I$(top_srcdir)/plugin-base \
 	$(SALUT_CFLAGS) \
 	$(TELEPATHY_YTSTENUT_CFLAGS)
 
@@ -16,13 +18,13 @@ ytstenut_salut_la_LIBADD = \
 ytstenut_salut_la_SOURCES = \
 	ytstenut.c \
 	ytstenut.h \
-	caps-manager.c \
-	caps-manager.h \
+	$(top_srcdir)/plugin-base/caps-manager.c \
+	$(top_srcdir)/plugin-base/caps-manager.h \
 	status.c \
 	status.h \
 	message-channel.c \
 	message-channel.h \
 	channel-manager.c \
 	channel-manager.h \
-	utils.c \
-	utils.h
+	$(top_srcdir)/plugin-base/utils.c \
+	$(top_srcdir)/plugin-base/utils.h

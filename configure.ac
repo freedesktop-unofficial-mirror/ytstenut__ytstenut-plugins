@@ -111,6 +111,7 @@ AC_SUBST(CFLAGS)
 AC_OUTPUT([
 	Makefile
 	mission-control/Makefile
+	plugin-base/Makefile
 	salut/Makefile
 	tests/Makefile
 	tests/twisted/Makefile
