@@ -88,6 +88,24 @@ AC_SUBST(TEST_PYTHON)
 AM_CONDITIONAL([WANT_TWISTED_TESTS], test false != "$TEST_PYTHON")
 
 # ------------------------------------------------------------------------------
+# GABBLE PLUGIN
+
+PKG_CHECK_MODULES(GABBLE, telepathy-gabble, HAVE_GABBLE=yes, HAVE_GABBLE=no)
+AC_SUBST(GABBLE_LIBS)
+AC_SUBST(GABBLE_CFLAGS)
+gabbleplugindir=`pkg-config --variable=plugindir telepathy-gabble`
+AC_SUBST(gabbleplugindir)
+
+AC_MSG_CHECKING([telepathy-gabble executable])
+GABBLE_EXECUTABLE=`pkg-config --variable=gabblepath telepathy-gabble`
+if test "$GABBLE_EXECUTABLE" = ""; then
+	AC_MSG_ERROR([could not determine location of telepathy-gabble executable])
+else
+	AC_MSG_RESULT([$GABBLE_EXECUTABLE])
+fi
+AC_SUBST(GABBLE_EXECUTABLE)
+
+# ------------------------------------------------------------------------------
 
 AC_ARG_ENABLE(debug,
 	AC_HELP_STRING([--enable-debug],
@@ -113,6 +131,7 @@ AC_OUTPUT([
 	mission-control/Makefile
 	plugin-base/Makefile
 	salut/Makefile
+	gabble/Makefile
 	tests/Makefile
 	tests/twisted/Makefile
 	tests/twisted/tools/Makefile
