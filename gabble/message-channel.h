@@ -25,6 +25,8 @@
 
 #include <telepathy-glib/base-channel.h>
 
+#include <wocky/wocky-stanza.h>
+
 #include <gabble/connection.h>
 
 G_BEGIN_DECLS
