@@ -256,28 +256,51 @@ ytst_channel_manager_set_property (GObject *object,
 }
 
 static void
-ytst_channel_manager_constructed (GObject *object)
-{
-  YtstChannelManager *self = YTST_CHANNEL_MANAGER (object);
-  YtstChannelManagerPrivate *priv = self->priv;
-  WockySession *session;
-
-  priv->channels = g_queue_new ();
-
+ytst_channel_manager_porter_available_cb (
 #ifdef SALUT
-  session = salut_connection_get_session (priv->connection);
+    SalutConnection *connection,
 #else
-  session = gabble_connection_get_session (priv->connection);
+    GabbleConnection *connection,
 #endif
+    WockyPorter *porter,
+    YtstChannelManager *self)
+{
+  YtstChannelManagerPrivate *priv = self->priv;
+
+  if (priv->message_handler_id > 0)
+    return;
 
   priv->message_handler_id = wocky_porter_register_handler_from_anyone (
-      wocky_session_get_porter (session),
+      porter,
       WOCKY_STANZA_TYPE_IQ, WOCKY_STANZA_SUB_TYPE_NONE,
       WOCKY_PORTER_HANDLER_PRIORITY_NORMAL,
       message_stanza_callback, self,
       '(', "message",
         ':', YTST_MESSAGE_NS,
       ')', NULL);
+}
+
+static void
+ytst_channel_manager_constructed (GObject *object)
+{
+  YtstChannelManager *self = YTST_CHANNEL_MANAGER (object);
+  YtstChannelManagerPrivate *priv = self->priv;
+#ifdef SALUT
+  WockySession *session;
+#endif
+
+  priv->channels = g_queue_new ();
+
+#ifdef SALUT
+  session = salut_connection_get_session (priv->connection);
+
+  ytst_channel_manager_porter_available_cb (priv->connection,
+      wocky_session_get_porter (session), self);
+#else
+  tp_g_signal_connect_object (priv->connection, "porter-available",
+      G_CALLBACK (ytst_channel_manager_porter_available_cb),
+      self, 0);
+#endif
 
   priv->status_changed_id = g_signal_connect (priv->connection,
       "status-changed", (GCallback) on_connection_status_changed, self);
@@ -411,6 +434,16 @@ ytst_channel_manager_type_foreach_channel_class (GType type,
   g_hash_table_destroy (table);
 }
 
+#ifdef GABBLE
+static gboolean
+dummy_predicate (const GabbleCapabilitySet *set,
+    gconstpointer user_data)
+{
+  /* TODO: this needs to get better */
+  return TRUE;
+}
+#endif
+
 static gboolean
 ytst_channel_manager_create_channel (TpChannelManager *manager,
     gpointer request_token,
@@ -430,6 +463,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   WockyLLContact *contact;
 #else
   TpHandle self_handle;
+  gchar *jid;
 #endif
   WockyStanza *request;
   GSList *tokens = NULL;
@@ -470,13 +504,17 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
     }
 #else
   self_handle = tp_base_connection_get_self_handle (base_conn);
+
+  jid = g_strdup_printf ("%s/%s", name,
+      gabble_connection_pick_best_resource_for_caps (priv->connection,
+          name, dummy_predicate, NULL));
 #endif
 
   request = ytst_message_channel_build_request (request_properties,
 #ifdef SALUT
       salut_connection_get_name (priv->connection), contact,
 #else
-      tp_handle_inspect (handle_repo, self_handle), name,
+      tp_handle_inspect (handle_repo, self_handle), jid,
 #endif
       &error);
   if (request == NULL)
@@ -486,12 +524,16 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
 #ifdef SALUT
       contact,
 #else
-      name,
+      jid,
 #endif
       request, handle, base_conn->self_handle, TRUE);
   manager_take_ownership_of_channel (self, channel);
 
   g_object_unref (request);
+
+#ifdef GABBLE
+  g_free (jid);
+#endif
 
   if (request_token != NULL)
     tokens = g_slist_prepend (tokens, request_token);
