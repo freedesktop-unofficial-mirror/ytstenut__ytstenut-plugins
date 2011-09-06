@@ -26,6 +26,10 @@
 
 #include <telepathy-glib/channel-manager.h>
 #include <telepathy-glib/util.h>
+#include <telepathy-glib/dbus.h>
+#include <telepathy-glib/interfaces.h>
+
+#include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
 #include <wocky/wocky-data-form.h>
 #include <wocky/wocky-namespaces.h>
@@ -188,6 +192,33 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
   const gchar *yts_type = NULL;
   GPtrArray *names = g_ptr_array_new ();
   GPtrArray *caps = g_ptr_array_new ();
+
+#ifdef GABBLE
+  guint i;
+
+  for (i = 0; i < filters->len; i++)
+    {
+      GHashTable *channel_class = g_ptr_array_index (filters, i);
+      const gchar *service_name;
+      gchar *cap;
+
+      if (tp_strdiff (tp_asv_get_string (channel_class,
+                  TP_IFACE_CHANNEL ".ChannelType"),
+              TP_YTS_IFACE_CHANNEL))
+        continue;
+
+      service_name = tp_asv_get_string (channel_class,
+          TP_YTS_IFACE_CHANNEL ".TargetService");
+
+      if (service_name == NULL)
+        continue;
+
+      cap = g_strdup_printf ("%s#%s",
+          YTST_SERVICE_NS, service_name);
+      gabble_capability_set_add (cap_set, cap);
+      g_free (cap);
+    }
+#endif
 
   for (t = cap_tokens; t != NULL && *t != NULL; t++)
     {

@@ -29,6 +29,7 @@ G_BEGIN_DECLS
 #define YTST_MESSAGE_NS "urn:ytstenut:message"
 #define YTST_STATUS_NS "urn:ytstenut:status"
 #define YTST_CAPABILITIES_NS "urn:ytstenut:capabilities"
+#define YTST_SERVICE_NS "urn:ytstenut:service"
 
 GQuark ytst_message_error_quark (void);
 #define YTST_MESSAGE_ERROR (ytst_message_error_quark ())
