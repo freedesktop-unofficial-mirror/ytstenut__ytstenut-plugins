@@ -434,16 +434,6 @@ ytst_channel_manager_type_foreach_channel_class (GType type,
   g_hash_table_destroy (table);
 }
 
-#ifdef GABBLE
-static gboolean
-dummy_predicate (const GabbleCapabilitySet *set,
-    gconstpointer user_data)
-{
-  /* TODO: this needs to get better */
-  return TRUE;
-}
-#endif
-
 static gboolean
 ytst_channel_manager_create_channel (TpChannelManager *manager,
     gpointer request_token,
@@ -462,8 +452,9 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   WockyContactFactory *factory;
   WockyLLContact *contact;
 #else
-  TpHandle self_handle;
-  gchar *jid;
+  gchar *jid, *full_jid;
+  gchar *service;
+  const gchar *resource;
 #endif
   WockyStanza *request;
   GSList *tokens = NULL;
@@ -503,20 +494,44 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
       goto error;
     }
 #else
-  self_handle = tp_base_connection_get_self_handle (base_conn);
+  if (tp_asv_get_string (request_properties,
+          TP_YTS_IFACE_CHANNEL ".TargetService") == NULL)
+    {
+      g_set_error (&error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+          "The TargetService property must be set.");
+      goto error;
+    }
 
-  jid = g_strdup_printf ("%s/%s", name,
-      gabble_connection_pick_best_resource_for_caps (priv->connection,
-          name, dummy_predicate, NULL));
+  service = g_strdup_printf ("%s#%s", YTST_SERVICE_NS,
+      tp_asv_get_string (request_properties,
+          TP_YTS_IFACE_CHANNEL ".TargetService"));
+
+  resource = gabble_connection_pick_best_resource_for_caps (priv->connection,
+      name, gabble_capability_set_predicate_has, service);
+  g_free (service);
+
+  if (resource == NULL)
+    {
+      g_set_error (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+          "Cannot find appropriate resource for contact.");
+      goto error;
+    }
+
+  jid = g_strdup_printf ("%s/%s", name, resource);
+
+  full_jid = gabble_connection_get_full_jid (priv->connection);
 #endif
 
   request = ytst_message_channel_build_request (request_properties,
 #ifdef SALUT
       salut_connection_get_name (priv->connection), contact,
 #else
-      tp_handle_inspect (handle_repo, self_handle), jid,
+      full_jid, jid,
 #endif
       &error);
+#ifdef GABBLE
+  g_free (full_jid);
+#endif
   if (request == NULL)
     goto error;
 
