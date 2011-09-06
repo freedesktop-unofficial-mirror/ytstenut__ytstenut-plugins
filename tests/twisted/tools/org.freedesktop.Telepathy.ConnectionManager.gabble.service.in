@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=org.freedesktop.Telepathy.ConnectionManager.gabble
+Exec=/bin/sh @abs_top_builddir@/tests/twisted/tools/gabble-exec-with-log.sh
