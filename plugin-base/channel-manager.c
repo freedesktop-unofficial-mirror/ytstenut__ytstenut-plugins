@@ -36,8 +36,12 @@
 
 #ifdef SALUT
 #include <salut/caps-channel-manager.h>
+typedef SalutConnection FooConnection;
+#define foo_connection_get_session salut_connection_get_session
 #else
 #include <gabble/caps-channel-manager.h>
+typedef GabbleConnection FooConnection;
+#define foo_connection_get_session gabble_connection_get_session
 #endif
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
@@ -67,11 +71,7 @@ enum
 /* private structure */
 struct _YtstChannelManagerPrivate
 {
-#ifdef SALUT
-  SalutConnection *connection;
-#else
-  GabbleConnection *connection;
-#endif
+  FooConnection *connection;
   GQueue *channels;
   gulong status_changed_id;
   guint message_handler_id;
@@ -257,11 +257,7 @@ ytst_channel_manager_set_property (GObject *object,
 
 static void
 ytst_channel_manager_porter_available_cb (
-#ifdef SALUT
-    SalutConnection *connection,
-#else
-    GabbleConnection *connection,
-#endif
+    FooConnection *connection,
     WockyPorter *porter,
     YtstChannelManager *self)
 {
@@ -321,11 +317,7 @@ ytst_channel_manager_dispose (GObject *object)
 
   priv->dispose_has_run = TRUE;
 
-#ifdef SALUT
-  session = salut_connection_get_session (priv->connection);
-#else
-  session = gabble_connection_get_session (priv->connection);
-#endif
+  session = foo_connection_get_session (priv->connection);
 
   if (session != NULL)
     {

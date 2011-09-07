@@ -29,8 +29,14 @@
 #ifdef SALUT
 #include <salut/plugin.h>
 #include <salut/protocol.h>
+typedef SalutPlugin FooPlugin;
+typedef SalutConnection FooConnection;
+typedef SalutSidecar FooSidecar;
 #else
 #include <gabble/plugin.h>
+typedef GabblePlugin FooPlugin;
+typedef GabbleConnection FooConnection;
+typedef GabbleSidecar FooSidecar;
 #endif
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
@@ -81,17 +87,9 @@ ytstenut_plugin_initialize (SalutPlugin *plugin,
 
 static void
 ytstenut_plugin_create_sidecar (
-#ifdef SALUT
-    SalutPlugin *plugin,
-#else
-    GabblePlugin *plugin,
-#endif
+    FooPlugin *plugin,
     const gchar *sidecar_interface,
-#ifdef SALUT
-    SalutConnection *connection,
-#else
-    GabbleConnection *connection,
-#endif
+    FooConnection *connection,
     WockySession *session,
     GAsyncReadyCallback callback,
     gpointer user_data)
@@ -107,19 +105,11 @@ ytstenut_plugin_create_sidecar (
       gabble_plugin_create_sidecar
 #endif
       );
-#ifdef SALUT
-  SalutSidecar *sidecar = NULL;
-#else
-  GabbleSidecar *sidecar = NULL;
-#endif
+  FooSidecar *sidecar = NULL;
 
   if (!tp_strdiff (sidecar_interface, TP_YTS_IFACE_STATUS))
     {
-#ifdef SALUT
-      sidecar = SALUT_SIDECAR (ytst_status_new (session, connection));
-#else
-      sidecar = GABBLE_SIDECAR (ytst_status_new (session, connection));
-#endif
+      sidecar = (FooSidecar *) ytst_status_new (session, connection);
       DEBUG ("created side car for: %s", TP_YTS_IFACE_STATUS);
     }
   else
@@ -137,11 +127,7 @@ ytstenut_plugin_create_sidecar (
 
 static GPtrArray *
 ytstenut_plugin_create_channel_managers (
-#ifdef SALUT
-    SalutPlugin *plugin,
-#else
-    GabblePlugin *plugin,
-#endif
+    FooPlugin *plugin,
     TpBaseConnection *connection)
 {
   GPtrArray *ret = g_ptr_array_sized_new (1);
@@ -177,11 +163,10 @@ plugin_iface_init (gpointer g_iface,
   iface->create_channel_managers = ytstenut_plugin_create_channel_managers;
 }
 
+FooPlugin *
 #ifdef SALUT
-SalutPlugin *
 salut_plugin_create (void)
 #else
-GabblePlugin *
 gabble_plugin_create (void)
 #endif
 {
