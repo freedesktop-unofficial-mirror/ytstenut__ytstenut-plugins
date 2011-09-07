@@ -10,6 +10,7 @@ TWISTED_BASIC_TESTS += \
 	salut/status.py \
 	salut/service.py \
 	salut/hct.py \
+	salut/slow-service.py \
 	gabble/sidecar.py \
 	gabble/message.py \
 	gabble/status.py \
