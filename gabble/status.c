@@ -274,7 +274,7 @@ pep_event_cb (WockyPorter *porter,
   /* looks good */
 
   from = wocky_stanza_get_from (stanza);
-  capability = wocky_node_get_ns (items);
+  capability = wocky_node_get_attribute (items, "node");
   service_name = wocky_node_get_attribute (status, "from-service");
 
   if (wocky_node_get_attribute (status, "activity") != NULL)
