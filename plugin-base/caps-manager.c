@@ -168,6 +168,7 @@ make_new_data_form (const gchar *uid,
   return out;
 }
 
+#ifdef SALUT
 static void
 add_to_array (gpointer key,
     gpointer value,
@@ -175,6 +176,7 @@ add_to_array (gpointer key,
 {
   g_ptr_array_add (user_data, g_object_ref (value));
 }
+#endif
 
 static void
 ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
@@ -184,8 +186,10 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
     GabbleCapabilitySet *cap_set,
     GPtrArray *data_forms)
 {
+#ifdef SALUT
   YtstCapsManager *self = YTST_CAPS_MANAGER (manager);
   YtstCapsManagerPrivate *priv = self->priv;
+#endif
   const gchar * const *t;
 
   const gchar *uid = NULL;
@@ -250,18 +254,33 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
         }
     }
 
+  /* So, gabble and salut have different ideas of how to save caps for
+   * clients. salut is arguably wrong here as it relies on the caps
+   * channel manager keeping a record of what clients can do. gabble
+   * does not need this and is simpler, so doesn't need the
+   * priv->services hash table at all. We should fix salut. */
+
   if (uid != NULL)
     {
+#ifdef SALUT
       g_hash_table_insert (priv->services,
           g_strdup (client_name),
           make_new_data_form (uid, yts_type, names, caps));
+#else
+      g_ptr_array_add (data_forms,
+          make_new_data_form (uid, yts_type, names, caps));
+#endif
     }
   else
     {
+#ifdef SALUT
       g_hash_table_remove (priv->services, client_name);
+#endif
     }
 
+#ifdef SALUT
   g_hash_table_foreach (priv->services, add_to_array, data_forms);
+#endif
 
   g_ptr_array_unref (names);
   g_ptr_array_unref (caps);
