@@ -705,7 +705,7 @@ ytst_status_advertise_status (TpYtsSvcStatus *svc,
   wocky_node_add_node_tree (item, status_tree);
   g_object_unref (status_tree);
 
-  wocky_porter_send_async (wocky_session_get_porter (priv->session),
+  wocky_porter_send_iq_async (wocky_session_get_porter (priv->session),
       stanza, NULL, NULL, NULL);
   g_object_unref (stanza);
 
