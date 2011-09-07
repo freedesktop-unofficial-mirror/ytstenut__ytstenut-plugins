@@ -9,7 +9,13 @@ TWISTED_BASIC_TESTS += \
 	salut/message.py \
 	salut/status.py \
 	salut/service.py \
-	salut/hct.py
+	salut/hct.py \
+	gabble/sidecar.py \
+	gabble/message.py \
+	gabble/status.py \
+	gabble/service.py \
+	gabble/hct.py
+
 endif
 
 config.py: Makefile
