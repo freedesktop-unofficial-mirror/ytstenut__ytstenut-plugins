@@ -15,7 +15,8 @@ TWISTED_BASIC_TESTS += \
 	gabble/message.py \
 	gabble/status.py \
 	gabble/service.py \
-	gabble/hct.py
+	gabble/hct.py \
+	gabble/slow-service.py
 
 endif
 

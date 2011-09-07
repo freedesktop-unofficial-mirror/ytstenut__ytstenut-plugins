@@ -451,15 +451,49 @@ capabilities_changed_cb (GSignalInvocationHint *ihint,
   return TRUE;
 }
 
+static void
+check_contact_capabilities (TpHandleSet *set,
+    TpHandle handle,
+    gpointer user_data)
+{
+  YtstStatus *self = user_data;
+  YtstStatusPrivate *priv = self->priv;
+  WockyXep0115Capabilities *caps;
+
+  caps = gabble_connection_get_caps (priv->connection,
+      handle);
+
+  if (caps != NULL)
+    contact_capabilities_changed (self, caps, FALSE);
+}
+
+static void
+contact_list_state_changed_cb (GabbleConnection *connection,
+    TpContactListState state,
+    YtstStatus *self)
+{
+  TpBaseContactList *contact_list;
+  TpHandleSet *contacts;
+
+  if (state != TP_CONTACT_LIST_STATE_SUCCESS)
+    return;
+
+  contact_list = gabble_connection_get_contact_list (connection);
+  contacts = tp_base_contact_list_dup_contacts (contact_list);
+
+  tp_handle_set_foreach (contacts,
+      check_contact_capabilities, self);
+
+  tp_handle_set_destroy (contacts);
+}
+
 static gboolean
 capabilities_idle_cb (gpointer data)
 {
   YtstStatus *self = YTST_STATUS (data);
   YtstStatusPrivate *priv = self->priv;
-  /* TODO
-  WockyContactFactory *factory;
-  GList *contacts, *l;
-  */
+  TpBaseContactList *contact_list;
+  TpContactListState contact_list_state;
 
   /* connect to all capabilities-changed signals */
   priv->capabilities_changed_id = g_signal_add_emission_hook (
@@ -468,18 +502,18 @@ capabilities_idle_cb (gpointer data)
 
   /* and now look through all the contacts that had caps before this
    * sidecar was ensured */
-  /* TODO
-  factory = wocky_session_get_contact_factory (priv->session);
-  contacts = wocky_contact_factory_get_ll_contacts (factory);
+  contact_list = gabble_connection_get_contact_list (priv->connection);
+  contact_list_state = tp_base_contact_list_get_state (contact_list, NULL);
 
-  for (l = contacts; l != NULL; l = l->next)
+  if (contact_list_state == TP_CONTACT_LIST_STATE_SUCCESS)
     {
-      if (WOCKY_IS_XEP_0115_CAPABILITIES (l->data))
-        contact_capabilities_changed (self, l->data, FALSE);
+      contact_list_state_changed_cb (priv->connection, contact_list_state, self);
     }
-
-  g_list_free (contacts);
-  */
+  else
+    {
+      tp_g_signal_connect_object (priv->connection, "contact-list-state-changed",
+          G_CALLBACK (contact_list_state_changed_cb), self, 0);
+    }
 
   return FALSE;
 }
