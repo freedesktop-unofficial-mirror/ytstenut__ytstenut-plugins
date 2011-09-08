@@ -37,7 +37,7 @@
 #define DEBUG(msg, ...) \
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
 
-#define CHANNEL_PREFIX "com.meego.xpmn.ytstenut.Channel/"
+#define CHANNEL_PREFIX "org.freedesktop.ytstenut.xpmn.Channel/"
 #define UID CHANNEL_PREFIX "uid/"
 #define TYPE CHANNEL_PREFIX "type/"
 #define NAME CHANNEL_PREFIX "name/"

@@ -44,11 +44,11 @@
 #define PLUGIN_NAME "ytstenut"
 #define PLUGIN_PRIORITY (MCP_ACCOUNT_STORAGE_PLUGIN_PRIO_KEYRING + 20)
 #define PLUGIN_DESCRIPTION "Provide Telepathy Accounts from ytstenut"
-#define PLUGIN_PROVIDER "com.meego.xpmn.ytstenut"
+#define PLUGIN_PROVIDER "org.freedesktop.ytstenut.xpmn"
 #define YTSTENUT_ACCOUNT_NAME "salut/local_ytstenut/automatic_account"
 #define YTSTENUT_ACCOUNT_PATH \
   TP_ACCOUNT_OBJECT_PATH_BASE YTSTENUT_ACCOUNT_NAME
-#define ACCOUNT_MANAGER_PATH "/com/meego/xpmn/ytstenut/AccountManager"
+#define ACCOUNT_MANAGER_PATH "/org/freedesktop/ytstenut/xpmn/AccountManager"
 
 /* Timeout after last release before going offline, in seconds */
 #define RELEASE_TIMEOUT 5

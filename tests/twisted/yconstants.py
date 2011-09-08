@@ -1,10 +1,10 @@
-YTST_ACCOUNT_MANAGER_PATH = "/com/meego/xpmn/ytstenut/AccountManager"
-YTST_ACCOUNT_MANAGER_IFACE = "com.meego.xpmn.ytstenut.AccountManager"
+YTST_ACCOUNT_MANAGER_PATH = "/org/freedesktop/ytstenut/xpmn/AccountManager"
+YTST_ACCOUNT_MANAGER_IFACE = "org.freedesktop.ytstenut.xpmn.AccountManager"
 YTST_ACCOUNT_PATH = "/org/freedesktop/Telepathy/Account/salut/local_ytstenut/automatic_account"
 
-STATUS_IFACE = 'com.meego.xpmn.ytstenut.Status'
+STATUS_IFACE = 'org.freedesktop.ytstenut.xpmn.Status'
 
-CHANNEL_IFACE = 'com.meego.xpmn.ytstenut.Channel'
+CHANNEL_IFACE = 'org.freedesktop.ytstenut.xpmn.Channel'
 
 REQUEST_TYPE = CHANNEL_IFACE + '.RequestType'
 REQUEST_ATTRIBUTES = CHANNEL_IFACE + '.RequestAttributes'

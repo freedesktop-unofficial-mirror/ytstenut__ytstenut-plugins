@@ -62,12 +62,12 @@ def test(q, bus, conn):
     # now update the caps
     conn.ContactCapabilities.UpdateCapabilities([
         ('well.gnome.name', [],
-         ['com.meego.xpmn.ytstenut.Channel/uid/org.gnome.Banshee',
-          'com.meego.xpmn.ytstenut.Channel/type/application',
-          'com.meego.xpmn.ytstenut.Channel/name/en_GB/Banshee Media Player',
-          'com.meego.xpmn.ytstenut.Channel/name/fr/Banshee Lecteur de Musique',
-          'com.meego.xpmn.ytstenut.Channel/caps/urn:ytstenut:capabilities:yts-caps-audio',
-          'com.meego.xpmn.ytstenut.Channel/caps/urn:ytstenut:data:jingle:rtp'])])
+         ['org.freedesktop.ytstenut.xpmn.Channel/uid/org.gnome.Banshee',
+          'org.freedesktop.ytstenut.xpmn.Channel/type/application',
+          'org.freedesktop.ytstenut.xpmn.Channel/name/en_GB/Banshee Media Player',
+          'org.freedesktop.ytstenut.xpmn.Channel/name/fr/Banshee Lecteur de Musique',
+          'org.freedesktop.ytstenut.xpmn.Channel/caps/urn:ytstenut:capabilities:yts-caps-audio',
+          'org.freedesktop.ytstenut.xpmn.Channel/caps/urn:ytstenut:data:jingle:rtp'])])
 
     e, _ = q.expect_many(EventPattern('service-resolved', service=service),
                          EventPattern('dbus-signal', signal='ServiceAdded'))
@@ -135,11 +135,11 @@ def test(q, bus, conn):
 
     conn.ContactCapabilities.UpdateCapabilities([
         ('another.nice.gname', [],
-         ['com.meego.xpmn.ytstenut.Channel/uid/org.gnome.Eog',
-          'com.meego.xpmn.ytstenut.Channel/type/application',
-          'com.meego.xpmn.ytstenut.Channel/name/en_GB/Eye Of Gnome',
-          'com.meego.xpmn.ytstenut.Channel/name/it/Occhio Di uno Gnomo',
-          'com.meego.xpmn.ytstenut.Channel/caps/urn:ytstenut:capabilities:yts-picz'])])
+         ['org.freedesktop.ytstenut.xpmn.Channel/uid/org.gnome.Eog',
+          'org.freedesktop.ytstenut.xpmn.Channel/type/application',
+          'org.freedesktop.ytstenut.xpmn.Channel/name/en_GB/Eye Of Gnome',
+          'org.freedesktop.ytstenut.xpmn.Channel/name/it/Occhio Di uno Gnomo',
+          'org.freedesktop.ytstenut.xpmn.Channel/caps/urn:ytstenut:capabilities:yts-picz'])])
 
     e = q.expect('dbus-signal', signal='ServiceAdded')
 
