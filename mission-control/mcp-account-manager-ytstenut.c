@@ -577,6 +577,7 @@ mcp_account_manager_ytstenut_release (TpYtsSvcAccountManager *manager,
           "calling Release().");
       dbus_g_method_return_error (context, error);
       g_error_free (error);
+      return;
     }
 
   tp_yts_svc_account_manager_return_from_release (context);
