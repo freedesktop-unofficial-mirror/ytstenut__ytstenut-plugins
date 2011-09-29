@@ -193,7 +193,8 @@ on_account_request_presence_ready (GObject *source, GAsyncResult *res,
 
 static void
 account_manager_set_presence (McpAccountManagerYtstenut *self,
-                              TpConnectionPresenceType presence)
+                              TpConnectionPresenceType presence,
+                              const gchar *presence_name)
 {
   McpAccountManagerYtstenutPrivate *priv = self->priv;
   GError *error = NULL;
@@ -210,9 +211,10 @@ account_manager_set_presence (McpAccountManagerYtstenut *self,
         }
     }
 
-  DEBUG ("Requesting that account presence be changed to: %d", (int)presence);
+  DEBUG ("Requesting that account presence be changed to: %d (%s)", (int)presence,
+      presence_name);
 
-  tp_account_request_presence_async (priv->account_proxy, presence, "", "",
+  tp_account_request_presence_async (priv->account_proxy, presence, presence_name, "",
       on_account_request_presence_ready, g_object_ref (self));
 }
 
@@ -227,7 +229,7 @@ on_release_timeout (gpointer user_data)
   DEBUG ("Release timeout called");
 
   if (g_hash_table_size (priv->hold_requests) == 0)
-    account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_OFFLINE);
+    account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_OFFLINE, "offline");
 
   /* Remove this source */
   return FALSE;
@@ -263,7 +265,7 @@ account_manager_hold (McpAccountManagerYtstenut *self, const gchar *client)
   tp_dbus_daemon_watch_name_owner (priv->dbus_daemon, client,
       on_name_owner_changed, self, NULL);
 
-  account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_AVAILABLE);
+  account_manager_set_presence (self, TP_CONNECTION_PRESENCE_TYPE_AVAILABLE, "available");
   if (priv->timeout_id != 0)
     {
       DEBUG ("Cancelling offline timeout");
