@@ -23,3 +23,4 @@ ERROR_TYPE_WAIT = 5
 
 MESSAGE_NS = 'urn:ytstenut:message'
 STATUS_NS = 'urn:ytstenut:status'
+SERVICE_NS = 'urn:ytstenut:service'

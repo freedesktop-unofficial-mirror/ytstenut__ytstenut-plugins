@@ -25,8 +25,7 @@
 
 #include <string.h>
 
-#include <salut/plugin.h>
-#include <salut/util.h>
+#include <gabble/plugin.h>
 
 #include <telepathy-glib/svc-generic.h>
 #include <telepathy-glib/gtypes.h>
@@ -44,12 +43,12 @@
 #define DEBUG(msg, ...) \
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
 
-static void sidecar_iface_init (SalutSidecarInterface *iface);
+static void sidecar_iface_init (GabbleSidecarInterface *iface);
 
 static void ytst_status_iface_init (TpYtsSvcStatusClass *iface);
 
 G_DEFINE_TYPE_WITH_CODE (YtstStatus, ytst_status, G_TYPE_OBJECT,
-    G_IMPLEMENT_INTERFACE (SALUT_TYPE_SIDECAR, sidecar_iface_init);
+    G_IMPLEMENT_INTERFACE (GABBLE_TYPE_SIDECAR, sidecar_iface_init);
     G_IMPLEMENT_INTERFACE (TP_TYPE_YTS_SVC_STATUS, ytst_status_iface_init);
     G_IMPLEMENT_INTERFACE (TP_TYPE_SVC_DBUS_PROPERTIES,
       tp_dbus_properties_mixin_iface_init);
@@ -69,7 +68,7 @@ enum
 struct _YtstStatusPrivate
 {
   WockySession *session;
-  SalutConnection *connection;
+  GabbleConnection *connection;
 
   guint handler_id;
   gulong capabilities_changed_id;
@@ -319,19 +318,16 @@ contact_capabilities_changed (YtstStatus *self,
   GHashTable *old, *new;
   GHashTableIter iter;
   gpointer key, value;
-  gchar *jid;
+  const gchar *jid;
 
   data_forms = wocky_xep_0115_capabilities_get_data_forms (
       WOCKY_XEP_0115_CAPABILITIES (contact));
 
-  /* A bit of a hack: both SalutContact and SalutSelf implement
-   * WockyXep0115Capabilities, so contact could be either one. We only
-   * need the contact jid, so let's just check whether it's a
-   * WockyContact or not then. */
-  if (WOCKY_IS_CONTACT (contact))
-    jid = wocky_contact_dup_jid (WOCKY_CONTACT (contact));
-  else
-    jid = g_strdup (wocky_session_get_jid (priv->session));
+  jid = gabble_connection_get_jid_for_caps (priv->connection,
+      WOCKY_XEP_0115_CAPABILITIES (contact));
+
+  if (jid == NULL)
+    return;
 
   old = g_hash_table_lookup (priv->discovered_services, jid);
 
@@ -439,8 +435,6 @@ contact_capabilities_changed (YtstStatus *self,
       g_hash_table_remove (priv->discovered_services, jid);
       g_hash_table_unref (new);
     }
-
-  g_free (jid);
 }
 
 static gboolean
@@ -457,13 +451,49 @@ capabilities_changed_cb (GSignalInvocationHint *ihint,
   return TRUE;
 }
 
+static void
+check_contact_capabilities (TpHandleSet *set,
+    TpHandle handle,
+    gpointer user_data)
+{
+  YtstStatus *self = user_data;
+  YtstStatusPrivate *priv = self->priv;
+  WockyXep0115Capabilities *caps;
+
+  caps = gabble_connection_get_caps (priv->connection,
+      handle);
+
+  if (caps != NULL)
+    contact_capabilities_changed (self, caps, FALSE);
+}
+
+static void
+contact_list_state_changed_cb (GabbleConnection *connection,
+    TpContactListState state,
+    YtstStatus *self)
+{
+  TpBaseContactList *contact_list;
+  TpHandleSet *contacts;
+
+  if (state != TP_CONTACT_LIST_STATE_SUCCESS)
+    return;
+
+  contact_list = gabble_connection_get_contact_list (connection);
+  contacts = tp_base_contact_list_dup_contacts (contact_list);
+
+  tp_handle_set_foreach (contacts,
+      check_contact_capabilities, self);
+
+  tp_handle_set_destroy (contacts);
+}
+
 static gboolean
 capabilities_idle_cb (gpointer data)
 {
   YtstStatus *self = YTST_STATUS (data);
   YtstStatusPrivate *priv = self->priv;
-  WockyContactFactory *factory;
-  GList *contacts, *l;
+  TpBaseContactList *contact_list;
+  TpContactListState contact_list_state;
 
   /* connect to all capabilities-changed signals */
   priv->capabilities_changed_id = g_signal_add_emission_hook (
@@ -472,16 +502,18 @@ capabilities_idle_cb (gpointer data)
 
   /* and now look through all the contacts that had caps before this
    * sidecar was ensured */
-  factory = wocky_session_get_contact_factory (priv->session);
-  contacts = wocky_contact_factory_get_ll_contacts (factory);
+  contact_list = gabble_connection_get_contact_list (priv->connection);
+  contact_list_state = tp_base_contact_list_get_state (contact_list, NULL);
 
-  for (l = contacts; l != NULL; l = l->next)
+  if (contact_list_state == TP_CONTACT_LIST_STATE_SUCCESS)
     {
-      if (WOCKY_IS_XEP_0115_CAPABILITIES (l->data))
-        contact_capabilities_changed (self, l->data, FALSE);
+      contact_list_state_changed_cb (priv->connection, contact_list_state, self);
     }
-
-  g_list_free (contacts);
+  else
+    {
+      tp_g_signal_connect_object (priv->connection, "contact-list-state-changed",
+          G_CALLBACK (contact_list_state_changed_cb), self, 0);
+    }
 
   return FALSE;
 }
@@ -595,9 +627,9 @@ ytst_status_class_init (YtstStatusClass *klass)
 
   param_spec = g_param_spec_object (
       "connection",
-      "Salut connection",
-      "SalutConnection object",
-      SALUT_TYPE_CONNECTION,
+      "Gabble connection",
+      "GabbleConnection object",
+      GABBLE_TYPE_CONNECTION,
       G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_CONNECTION,
       param_spec);
@@ -701,13 +733,14 @@ ytst_status_advertise_status (TpYtsSvcStatus *svc,
   wocky_node_set_attribute (status_node, "capability",
       capability);
 
-  stanza = wocky_pubsub_make_event_stanza (capability,
-      salut_connection_get_name (priv->connection), &item);
+  stanza = wocky_pubsub_make_publish_stanza (NULL, capability,
+      NULL, NULL, &item);
 
   wocky_node_add_node_tree (item, status_tree);
   g_object_unref (status_tree);
 
-  salut_send_ll_pep_event (priv->session, stanza);
+  wocky_porter_send_iq_async (wocky_session_get_porter (priv->session),
+      stanza, NULL, NULL, NULL);
   g_object_unref (stanza);
 
 out:
@@ -732,7 +765,7 @@ ytst_status_iface_init (TpYtsSvcStatusClass *iface)
 }
 
 static void
-sidecar_iface_init (SalutSidecarInterface *iface)
+sidecar_iface_init (GabbleSidecarInterface *iface)
 {
   iface->interface = TP_YTS_IFACE_STATUS;
   iface->get_immutable_properties = NULL;
@@ -744,7 +777,7 @@ sidecar_iface_init (SalutSidecarInterface *iface)
 
 YtstStatus *
 ytst_status_new (WockySession *session,
-    SalutConnection *connection)
+    GabbleConnection *connection)
 {
   return g_object_new (YTST_TYPE_STATUS,
       "session", session,

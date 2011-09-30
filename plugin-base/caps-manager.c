@@ -26,11 +26,19 @@
 
 #include <telepathy-glib/channel-manager.h>
 #include <telepathy-glib/util.h>
+#include <telepathy-glib/dbus.h>
+#include <telepathy-glib/interfaces.h>
+
+#include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
 #include <wocky/wocky-data-form.h>
 #include <wocky/wocky-namespaces.h>
 
+#ifdef SALUT
 #include <salut/caps-channel-manager.h>
+#else
+#include <gabble/caps-channel-manager.h>
+#endif
 
 #include "utils.h"
 
@@ -160,6 +168,7 @@ make_new_data_form (const gchar *uid,
   return out;
 }
 
+#ifdef SALUT
 static void
 add_to_array (gpointer key,
     gpointer value,
@@ -167,6 +176,7 @@ add_to_array (gpointer key,
 {
   g_ptr_array_add (user_data, g_object_ref (value));
 }
+#endif
 
 static void
 ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
@@ -176,14 +186,43 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
     GabbleCapabilitySet *cap_set,
     GPtrArray *data_forms)
 {
+#ifdef SALUT
   YtstCapsManager *self = YTST_CAPS_MANAGER (manager);
   YtstCapsManagerPrivate *priv = self->priv;
+#endif
   const gchar * const *t;
 
   const gchar *uid = NULL;
   const gchar *yts_type = NULL;
   GPtrArray *names = g_ptr_array_new ();
   GPtrArray *caps = g_ptr_array_new ();
+
+#ifdef GABBLE
+  guint i;
+
+  for (i = 0; i < filters->len; i++)
+    {
+      GHashTable *channel_class = g_ptr_array_index (filters, i);
+      const gchar *service_name;
+      gchar *cap;
+
+      if (tp_strdiff (tp_asv_get_string (channel_class,
+                  TP_IFACE_CHANNEL ".ChannelType"),
+              TP_YTS_IFACE_CHANNEL))
+        continue;
+
+      service_name = tp_asv_get_string (channel_class,
+          TP_YTS_IFACE_CHANNEL ".TargetService");
+
+      if (service_name == NULL)
+        continue;
+
+      cap = g_strdup_printf ("%s#%s",
+          YTST_SERVICE_NS, service_name);
+      gabble_capability_set_add (cap_set, cap);
+      g_free (cap);
+    }
+#endif
 
   for (t = cap_tokens; t != NULL && *t != NULL; t++)
     {
@@ -215,18 +254,33 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
         }
     }
 
+  /* So, gabble and salut have different ideas of how to save caps for
+   * clients. salut is arguably wrong here as it relies on the caps
+   * channel manager keeping a record of what clients can do. gabble
+   * does not need this and is simpler, so doesn't need the
+   * priv->services hash table at all. We should fix salut. */
+
   if (uid != NULL)
     {
+#ifdef SALUT
       g_hash_table_insert (priv->services,
           g_strdup (client_name),
           make_new_data_form (uid, yts_type, names, caps));
+#else
+      g_ptr_array_add (data_forms,
+          make_new_data_form (uid, yts_type, names, caps));
+#endif
     }
   else
     {
+#ifdef SALUT
       g_hash_table_remove (priv->services, client_name);
+#endif
     }
 
+#ifdef SALUT
   g_hash_table_foreach (priv->services, add_to_array, data_forms);
+#endif
 
   g_ptr_array_unref (names);
   g_ptr_array_unref (caps);
@@ -237,7 +291,11 @@ caps_channel_manager_iface_init (
     gpointer g_iface,
     gpointer data G_GNUC_UNUSED)
 {
+#ifdef SALUT /* sigh */
   GabbleCapsChannelManagerIface *iface = g_iface;
+#else
+  GabbleCapsChannelManagerInterface *iface = g_iface;
+#endif
 
   iface->represent_client = ytst_caps_manager_represent_client;
 }

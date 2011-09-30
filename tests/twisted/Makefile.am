@@ -9,7 +9,15 @@ TWISTED_BASIC_TESTS += \
 	salut/message.py \
 	salut/status.py \
 	salut/service.py \
-	salut/hct.py
+	salut/hct.py \
+	salut/slow-service.py \
+	gabble/sidecar.py \
+	gabble/message.py \
+	gabble/status.py \
+	gabble/service.py \
+	gabble/hct.py \
+	gabble/slow-service.py
+
 endif
 
 config.py: Makefile
@@ -46,7 +54,9 @@ BASIC_TESTS_ENVIRONMENT = \
 	XDG_CACHE_HOME=@abs_top_builddir@/tests/twisted/tmp-$(TMPSUFFIX) \
 	G_DEBUG=fatal_criticals \
 	SALUT_PLUGIN_DIR=@abs_top_builddir@/salut/.libs \
-	SALUT_TEST_BACKTRACE=1
+	SALUT_TEST_BACKTRACE=1 \
+	GABBLE_PLUGIN_DIR=@abs_top_builddir@/gabble/.libs \
+	GABBLE_TEST_BACKTRACE=1
 
 WITH_SESSION_BUS = \
 	sh $(srcdir)/tools/with-session-bus.sh \
@@ -63,6 +73,7 @@ check-twisted:
 	rm -f tools/core
 	rm -f tools/missioncontrol-*.log
 	rm -f tools/salut-testing.log
+	rm -f tools/gabble-testing.log
 	mkdir tmp-$$$$ && { \
 		$(MAKE) check-combined TMPSUFFIX=$$$$; \
 		e=$$?; \
@@ -143,7 +154,11 @@ EXTRA_DIST = \
 	avahitest.py \
 	xmppstream.py \
 	ipv6.py \
-	caps_helper.py
+	caps_helper.py \
+	gabbleservicetest.py \
+	gabbletest.py \
+	gabbleconstants.py \
+	gabblecaps_helper.py
 
 CLEANFILES = \
 	accounts/accounts.cfg \

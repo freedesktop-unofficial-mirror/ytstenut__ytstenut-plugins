@@ -1,21 +1,21 @@
 AM_CFLAGS = \
 	-DG_LOG_DOMAIN=\"ytstenut\" \
-	-DSALUT \
+	-DGABBLE \
 	-I$(top_srcdir)/plugin-base \
-	$(SALUT_CFLAGS) \
+	$(GABBLE_CFLAGS) \
 	$(TELEPATHY_YTSTENUT_CFLAGS)
 
-plugindir = $(salutplugindir)
+plugindir = $(gabbleplugindir)
 
-plugin_LTLIBRARIES = ytstenut-salut.la
+plugin_LTLIBRARIES = ytstenut-gabble.la
 
 AM_LDFLAGS = -module -avoid-version -shared
 
-ytstenut_salut_la_LIBADD = \
-	$(SALUT_LIBS) \
+ytstenut_gabble_la_LIBADD = \
+	$(GABBLE_LIBS) \
 	$(TELEPATHY_YTSTENUT_LIBS)
 
-ytstenut_salut_la_SOURCES = \
+ytstenut_gabble_la_SOURCES = \
 	$(top_srcdir)/plugin-base/ytstenut.c \
 	$(top_srcdir)/plugin-base/ytstenut.h \
 	$(top_srcdir)/plugin-base/caps-manager.c \
@@ -28,3 +28,4 @@ ytstenut_salut_la_SOURCES = \
 	$(top_srcdir)/plugin-base/channel-manager.h \
 	$(top_srcdir)/plugin-base/utils.c \
 	$(top_srcdir)/plugin-base/utils.h
+

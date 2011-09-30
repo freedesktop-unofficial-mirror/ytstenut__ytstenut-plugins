@@ -204,7 +204,7 @@ def wait_for_contact_in_publish(q, bus, conn, contact_name):
         e = q.expect('dbus-signal', signal='MembersChangedDetailed',
                 path=publish)
         for h in e.args[0]:
-            name = e.args[4]['member-ids'][h]
+            name = e.args[4]['contact-ids'][h]
             if name == contact_name:
                 handle = h
 
