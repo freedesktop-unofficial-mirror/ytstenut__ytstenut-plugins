@@ -131,6 +131,10 @@ fi
 
 # ------------------------------------------------------------------------------
 
+PKG_CHECK_MODULES(WOCKY, wocky >= 0.0.0)
+AC_SUBST(WOCKY_CFLAGS)
+AC_SUBST(WOCKY_LIBS)
+
 AC_ARG_ENABLE(debug,
 	AC_HELP_STRING([--enable-debug],
 	[Compile binaries in debug mode]))

@@ -3,7 +3,8 @@ AM_CFLAGS = \
 	-DGABBLE \
 	-I$(top_srcdir)/plugin-base \
 	$(GABBLE_CFLAGS) \
-	$(TELEPATHY_YTSTENUT_CFLAGS)
+	$(TELEPATHY_YTSTENUT_CFLAGS) \
+	$(WOCKY_CFLAGS)
 
 plugindir = $(gabbleplugindir)
 
@@ -12,20 +13,32 @@ plugin_LTLIBRARIES = ytstenut-gabble.la
 AM_LDFLAGS = -module -avoid-version -no-undefined -shared
 
 ytstenut_gabble_la_LIBADD = \
-	$(GABBLE_LIBS) \
-	$(TELEPATHY_YTSTENUT_LIBS)
+	$(TELEPATHY_YTSTENUT_LIBS) \
+	$(WOCKY_LIBS)
+
+copied_files = \
+	ytstenut.c \
+	caps-manager.c \
+	channel-manager.c \
+	utils.c
 
 ytstenut_gabble_la_SOURCES = \
-	$(top_srcdir)/plugin-base/ytstenut.c \
-	$(top_srcdir)/plugin-base/ytstenut.h \
-	$(top_srcdir)/plugin-base/caps-manager.c \
-	$(top_srcdir)/plugin-base/caps-manager.h \
+	$(copied_files) \
 	status.c \
-	status.h \
-	message-channel.c \
-	message-channel.h \
-	$(top_srcdir)/plugin-base/channel-manager.c \
-	$(top_srcdir)/plugin-base/channel-manager.h \
-	$(top_srcdir)/plugin-base/utils.c \
-	$(top_srcdir)/plugin-base/utils.h
+	message-channel.c
 
+CLEANFILES = $(copied_files)
+
+Android.mk: Makefile.am $(BUILT_SOURCES)
+	for i in $(copied_files); do \
+	  cp $(top_srcdir)/plugin-base/$$i .; \
+	done
+	androgenizer -:PROJECT ytstenut-plugins \
+	 -:SHARED ytstenut-gabble -:TAGS eng debug \
+	 -:REL_TOP $(top_srcdir) -:ABS_TOP $(abs_top_srcdir) \
+	 -:SOURCES $(ytstenut_gabble_la_SOURCES) \
+	 -:CFLAGS $(DEFS) $(CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	  $(AM_CFLAGS) \
+	 -:CPPFLAGS $(CPPFLAGS) $(AM_CPPFLAGS) \
+	 -:LDFLAGS $(AM_LDFLAGS) $(ytstenut_gabble_la_LIBADD) -ltelepathy-gabble \
+	> $@

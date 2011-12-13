@@ -22,3 +22,15 @@ mcp_account_manager_ytstenut_la_LDFLAGS = \
 	-avoid-version \
 	-no-undefined \
 	-export-symbols-regex 'mcp_plugin_ref_nth_object|mcd_plugin_init'
+
+Android.mk: Makefile.am
+	androgenizer -:PROJECT ytstenut_plugins \
+	 -:SHARED mcp-account-manager-ytstenut \
+	 -:TAGS eng debug \
+	 -:REL_TOP $(top_srcdir) -:ABS_TOP $(abs_top_srcdir) \
+	 -:SOURCES $(mcp_account_manager_ytstenut_la_SOURCES) \
+	 -:CFLAGS $(DEFS) $(CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	  $(AM_CFLAGS) \
+	 -:CPPFLAGS $(CPPFLAGS) $(AM_CPPFLAGS) \
+	 -:LDFLAGS $(mcp_account_manager_ytstenut_la_LIBADD) \
+	> $@
