@@ -59,6 +59,18 @@ AC_SUBST(MISSION_CONTROL_EXECUTABLE)
 # ------------------------------------------------------------------------------
 # SALUT PLUGIN
 
+AC_MSG_CHECKING(whether to build with telepathy-salut plugin support)
+AC_ARG_ENABLE(salut-plugin,
+    AS_HELP_STRING([--enable-salut-plugin],[build telepathy-salut plugin default=yes]),
+                   enable_salut_plugin=$enableval,enable_salut_plugin=yes)
+
+AM_CONDITIONAL(HAVE_TP_SALUT, [test "x$enable_salt_plugin" = "xyes"])
+
+AC_MSG_RESULT($enable_salut_plugin)
+
+
+if test "x$enable_salut_plugin" = "xyes"
+then
 PKG_CHECK_MODULES(SALUT, telepathy-salut)
 AC_SUBST(SALUT_LIBS)
 AC_SUBST(SALUT_CFLAGS)
@@ -73,7 +85,7 @@ else
 	AC_MSG_RESULT([$SALUT_EXECUTABLE])
 fi
 AC_SUBST(SALUT_EXECUTABLE)
-
+fi
 AM_PATH_PYTHON([2.5])
 
 # Check for a python >= 2.5 with twisted to run python tests
@@ -90,6 +102,17 @@ AM_CONDITIONAL([WANT_TWISTED_TESTS], test false != "$TEST_PYTHON")
 # ------------------------------------------------------------------------------
 # GABBLE PLUGIN
 
+AC_MSG_CHECKING(whether to build with telepathy-gabble plugin support)
+AC_ARG_ENABLE(gabble-plugin,
+    AS_HELP_STRING([--enable-gabble-plugin],[build telepathy-gabble plugin default=yes]),
+                   enable_gabble_plugin=$enableval,enable_gabble_plugin=yes)
+
+AM_CONDITIONAL(HAVE_TP_GABBLE, [test "x$enable_gabble_plugin" = "xyes"])
+
+AC_MSG_RESULT($enable_gabble_plugin)
+
+if test "x$enable_gabble_plugin" = "xyes"
+then
 PKG_CHECK_MODULES(GABBLE, telepathy-gabble)
 AC_SUBST(GABBLE_LIBS)
 AC_SUBST(GABBLE_CFLAGS)
@@ -104,6 +127,7 @@ else
 	AC_MSG_RESULT([$GABBLE_EXECUTABLE])
 fi
 AC_SUBST(GABBLE_EXECUTABLE)
+fi
 
 # ------------------------------------------------------------------------------
 
