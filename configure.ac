@@ -59,7 +59,7 @@ AC_SUBST(MISSION_CONTROL_EXECUTABLE)
 # ------------------------------------------------------------------------------
 # SALUT PLUGIN
 
-PKG_CHECK_MODULES(SALUT, telepathy-salut, HAVE_SALUT=yes, HAVE_SALUT=no)
+PKG_CHECK_MODULES(SALUT, telepathy-salut)
 AC_SUBST(SALUT_LIBS)
 AC_SUBST(SALUT_CFLAGS)
 salutplugindir=`pkg-config --variable=plugindir telepathy-salut`
@@ -90,7 +90,7 @@ AM_CONDITIONAL([WANT_TWISTED_TESTS], test false != "$TEST_PYTHON")
 # ------------------------------------------------------------------------------
 # GABBLE PLUGIN
 
-PKG_CHECK_MODULES(GABBLE, telepathy-gabble, HAVE_GABBLE=yes, HAVE_GABBLE=no)
+PKG_CHECK_MODULES(GABBLE, telepathy-gabble)
 AC_SUBST(GABBLE_LIBS)
 AC_SUBST(GABBLE_CFLAGS)
 gabbleplugindir=`pkg-config --variable=plugindir telepathy-gabble`
