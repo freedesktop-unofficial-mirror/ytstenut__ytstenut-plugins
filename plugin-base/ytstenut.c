@@ -19,6 +19,7 @@
  */
 
 #include "config.h"
+#include <stdio.h>
 
 #include "ytstenut.h"
 
@@ -34,8 +35,9 @@ typedef SalutConnection FooConnection;
 typedef SalutSidecar FooSidecar;
 #else
 #include <gabble/plugin.h>
+#include <gabble/plugin-connection.h>
 typedef GabblePlugin FooPlugin;
-typedef GabbleConnection FooConnection;
+typedef GabblePluginConnection FooConnection;
 typedef GabbleSidecar FooSidecar;
 #endif
 
@@ -86,7 +88,7 @@ ytstenut_plugin_initialize (SalutPlugin *plugin,
 #endif
 
 static void
-ytstenut_plugin_create_sidecar (
+ytstenut_plugin_create_sidecar_async (
     FooPlugin *plugin,
     const gchar *sidecar_interface,
     FooConnection *connection,
@@ -102,7 +104,7 @@ ytstenut_plugin_create_sidecar (
 #ifdef SALUT
       salut_plugin_create_sidecar_async
 #else
-      gabble_plugin_create_sidecar
+      ytstenut_plugin_create_sidecar_async
 #endif
       );
   FooSidecar *sidecar = NULL;
@@ -122,17 +124,21 @@ ytstenut_plugin_create_sidecar (
     g_simple_async_result_set_op_res_gpointer (result, sidecar, g_object_unref);
 
   g_simple_async_result_complete_in_idle (result);
+
+  g_simple_async_result_is_valid ((GAsyncResult*) result, G_OBJECT (plugin), NULL);
+
   g_object_unref (result);
 }
 
 static GPtrArray *
 ytstenut_plugin_create_channel_managers (
     FooPlugin *plugin,
+    FooConnection *plugin_connection,
     TpBaseConnection *connection)
 {
   GPtrArray *ret = g_ptr_array_sized_new (1);
 
-  DEBUG ("%p on connection %p", plugin, connection);
+  DEBUG ("%p on connection %p", plugin, plugin_connection);
 
   g_ptr_array_add (ret, g_object_new (YTST_TYPE_CAPS_MANAGER, NULL));
   g_ptr_array_add (ret, ytst_channel_manager_new (connection));
@@ -159,7 +165,7 @@ plugin_iface_init (gpointer g_iface,
   iface->version = PACKAGE_VERSION;
 
   iface->sidecar_interfaces = sidecar_interfaces;
-  iface->create_sidecar = ytstenut_plugin_create_sidecar;
+  iface->create_sidecar_async = ytstenut_plugin_create_sidecar_async;
   iface->create_channel_managers = ytstenut_plugin_create_channel_managers;
 }
 

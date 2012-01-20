@@ -27,7 +27,7 @@
 
 #include <wocky/wocky-session.h>
 
-#include <gabble/connection.h>
+#include <gabble/plugin-connection.h>
 
 G_BEGIN_DECLS
 
@@ -63,7 +63,7 @@ GType ytst_status_get_type (void);
   (G_TYPE_INSTANCE_GET_CLASS ((obj), YTST_TYPE_STATUS, YtstStatusClass))
 
 YtstStatus * ytst_status_new (WockySession *session,
-    GabbleConnection *connection);
+    GabblePluginConnection *connection);
 
 G_END_DECLS
 

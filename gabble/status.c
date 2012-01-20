@@ -68,7 +68,7 @@ enum
 struct _YtstStatusPrivate
 {
   WockySession *session;
-  GabbleConnection *connection;
+  GabblePluginConnection *connection;
 
   guint handler_id;
   gulong capabilities_changed_id;
@@ -323,7 +323,7 @@ contact_capabilities_changed (YtstStatus *self,
   data_forms = wocky_xep_0115_capabilities_get_data_forms (
       WOCKY_XEP_0115_CAPABILITIES (contact));
 
-  jid = gabble_connection_get_jid_for_caps (priv->connection,
+  jid = gabble_plugin_connection_get_jid_for_caps (priv->connection,
       WOCKY_XEP_0115_CAPABILITIES (contact));
 
   if (jid == NULL)
@@ -460,7 +460,7 @@ check_contact_capabilities (TpHandleSet *set,
   YtstStatusPrivate *priv = self->priv;
   WockyXep0115Capabilities *caps;
 
-  caps = gabble_connection_get_caps (priv->connection,
+  caps = gabble_plugin_connection_get_caps (priv->connection,
       handle);
 
   if (caps != NULL)
@@ -468,7 +468,7 @@ check_contact_capabilities (TpHandleSet *set,
 }
 
 static void
-contact_list_state_changed_cb (GabbleConnection *connection,
+contact_list_state_changed_cb (GabblePluginConnection *connection,
     TpContactListState state,
     YtstStatus *self)
 {
@@ -478,7 +478,7 @@ contact_list_state_changed_cb (GabbleConnection *connection,
   if (state != TP_CONTACT_LIST_STATE_SUCCESS)
     return;
 
-  contact_list = gabble_connection_get_contact_list (connection);
+  contact_list = gabble_plugin_connection_get_contact_list (connection);
   contacts = tp_base_contact_list_dup_contacts (contact_list);
 
   tp_handle_set_foreach (contacts,
@@ -502,7 +502,7 @@ capabilities_idle_cb (gpointer data)
 
   /* and now look through all the contacts that had caps before this
    * sidecar was ensured */
-  contact_list = gabble_connection_get_contact_list (priv->connection);
+  contact_list = gabble_plugin_connection_get_contact_list (priv->connection);
   contact_list_state = tp_base_contact_list_get_state (contact_list, NULL);
 
   if (contact_list_state == TP_CONTACT_LIST_STATE_SUCCESS)
@@ -628,8 +628,8 @@ ytst_status_class_init (YtstStatusClass *klass)
   param_spec = g_param_spec_object (
       "connection",
       "Gabble connection",
-      "GabbleConnection object",
-      GABBLE_TYPE_CONNECTION,
+      "GabblePluginConnection object",
+      GABBLE_TYPE_PLUGIN_CONNECTION,
       G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_CONNECTION,
       param_spec);
@@ -777,7 +777,7 @@ sidecar_iface_init (GabbleSidecarInterface *iface)
 
 YtstStatus *
 ytst_status_new (WockySession *session,
-    GabbleConnection *connection)
+    GabblePluginConnection *connection)
 {
   return g_object_new (YTST_TYPE_STATUS,
       "session", session,

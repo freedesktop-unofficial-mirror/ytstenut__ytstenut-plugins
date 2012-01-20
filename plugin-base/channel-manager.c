@@ -40,8 +40,8 @@ typedef SalutConnection FooConnection;
 #define foo_connection_get_session salut_connection_get_session
 #else
 #include <gabble/caps-channel-manager.h>
-typedef GabbleConnection FooConnection;
-#define foo_connection_get_session gabble_connection_get_session
+typedef GabblePluginConnection FooConnection;
+#define foo_connection_get_session gabble_plugin_connection_get_session
 #endif
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
@@ -498,7 +498,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
       tp_asv_get_string (request_properties,
           TP_YTS_IFACE_CHANNEL ".TargetService"));
 
-  resource = gabble_connection_pick_best_resource_for_caps (priv->connection,
+  resource = gabble_plugin_connection_pick_best_resource_for_caps (priv->connection,
       name, gabble_capability_set_predicate_has, service);
   g_free (service);
 
@@ -511,7 +511,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
 
   jid = g_strdup_printf ("%s/%s", name, resource);
 
-  full_jid = gabble_connection_get_full_jid (priv->connection);
+  full_jid = gabble_plugin_connection_get_full_jid (priv->connection);
 #endif
 
   request = ytst_message_channel_build_request (request_properties,
