@@ -130,6 +130,27 @@ ytstenut_plugin_create_sidecar_async (
   g_object_unref (result);
 }
 
+static GabbleSidecar *
+ytstenut_plugin_create_sidecar_finish (
+     GabblePlugin *plugin,
+     GAsyncResult *result,
+     GError **error)
+{
+  GabbleSidecar *sidecar;
+
+  if (g_simple_async_result_propagate_error (G_SIMPLE_ASYNC_RESULT (result),
+        error))
+    return NULL;
+
+  g_return_val_if_fail (g_simple_async_result_is_valid (result,
+        G_OBJECT (plugin), ytstenut_plugin_create_sidecar_async), NULL);
+
+  sidecar = GABBLE_SIDECAR (g_simple_async_result_get_op_res_gpointer (
+        G_SIMPLE_ASYNC_RESULT (result)));
+
+  return g_object_ref (sidecar);
+}
+
 static GPtrArray *
 ytstenut_plugin_create_channel_managers (
     FooPlugin *plugin,
@@ -166,6 +187,7 @@ plugin_iface_init (gpointer g_iface,
 
   iface->sidecar_interfaces = sidecar_interfaces;
   iface->create_sidecar_async = ytstenut_plugin_create_sidecar_async;
+  iface->create_sidecar_finish = ytstenut_plugin_create_sidecar_finish;
   iface->create_channel_managers = ytstenut_plugin_create_channel_managers;
 }
 
