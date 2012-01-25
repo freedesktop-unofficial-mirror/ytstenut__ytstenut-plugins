@@ -19,7 +19,6 @@
  */
 
 #include "config.h"
-#include <stdio.h>
 
 #include "ytstenut.h"
 
@@ -98,10 +97,10 @@ ytstenut_plugin_create_sidecar_async (
 {
   GSimpleAsyncResult *result = g_simple_async_result_new (G_OBJECT (plugin),
       callback, user_data,
-      /* sic: all plugins share {salut,gabble}_plugin_create_sidecar_finish() so we
+#ifdef SALUT
+      /* sic: all plugins share salut_plugin_create_sidecar_finish() so we
        * need to use the same source tag.
        */
-#ifdef SALUT
       salut_plugin_create_sidecar_async
 #else
       ytstenut_plugin_create_sidecar_async
@@ -125,11 +124,10 @@ ytstenut_plugin_create_sidecar_async (
 
   g_simple_async_result_complete_in_idle (result);
 
-  g_simple_async_result_is_valid ((GAsyncResult*) result, G_OBJECT (plugin), NULL);
-
   g_object_unref (result);
 }
 
+#ifdef GABBLE
 static GabbleSidecar *
 ytstenut_plugin_create_sidecar_finish (
      GabblePlugin *plugin,
@@ -150,6 +148,7 @@ ytstenut_plugin_create_sidecar_finish (
 
   return g_object_ref (sidecar);
 }
+#endif
 
 static GPtrArray *
 ytstenut_plugin_create_channel_managers (
@@ -180,14 +179,16 @@ plugin_iface_init (gpointer g_iface,
 #ifdef SALUT
   iface->api_version = SALUT_PLUGIN_CURRENT_VERSION;
   iface->initialize = ytstenut_plugin_initialize;
+  iface->create_sidecar = ytstenut_plugin_create_sidecar_async;
+#else
+  iface->create_sidecar_async = ytstenut_plugin_create_sidecar_async;
+  iface->create_sidecar_finish = ytstenut_plugin_create_sidecar_finish;
 #endif
 
   iface->name = "Ytstenut plugin";
   iface->version = PACKAGE_VERSION;
 
   iface->sidecar_interfaces = sidecar_interfaces;
-  iface->create_sidecar_async = ytstenut_plugin_create_sidecar_async;
-  iface->create_sidecar_finish = ytstenut_plugin_create_sidecar_finish;
   iface->create_channel_managers = ytstenut_plugin_create_channel_managers;
 }
 
