@@ -9,7 +9,7 @@ plugindir = $(gabbleplugindir)
 
 plugin_LTLIBRARIES = ytstenut-gabble.la
 
-AM_LDFLAGS = -module -avoid-version -shared
+AM_LDFLAGS = -module -avoid-version -no-undefined -shared
 
 ytstenut_gabble_la_LIBADD = \
 	$(GABBLE_LIBS) \
