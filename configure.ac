@@ -64,7 +64,7 @@ AC_ARG_ENABLE(salut-plugin,
     AS_HELP_STRING([--enable-salut-plugin],[build telepathy-salut plugin default=yes]),
                    enable_salut_plugin=$enableval,enable_salut_plugin=yes)
 
-AM_CONDITIONAL(HAVE_TP_SALUT, [test "x$enable_salt_plugin" = "xyes"])
+AM_CONDITIONAL(HAVE_TP_SALUT, [test "x$enable_salut_plugin" = "xyes"])
 
 AC_MSG_RESULT($enable_salut_plugin)
 
