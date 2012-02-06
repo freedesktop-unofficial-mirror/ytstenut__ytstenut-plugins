@@ -31,8 +31,7 @@
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
-#include <wocky/wocky-data-form.h>
-#include <wocky/wocky-namespaces.h>
+#include <wocky/wocky.h>
 
 #ifdef SALUT
 #include <salut/caps-channel-manager.h>

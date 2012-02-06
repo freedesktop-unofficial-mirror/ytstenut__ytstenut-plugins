@@ -25,7 +25,7 @@
 
 #include <telepathy-glib/base-channel.h>
 
-#include <wocky/wocky-stanza.h>
+#include <wocky/wocky.h>
 
 #include <gabble/plugin-connection.h>
 

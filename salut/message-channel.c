@@ -42,11 +42,7 @@
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
-#include <wocky/wocky-namespaces.h>
-#include <wocky/wocky-utils.h>
-#include <wocky/wocky-xmpp-reader.h>
-#include <wocky/wocky-xmpp-writer.h>
-#include <wocky/wocky-xmpp-error-enumtypes.h>
+#include <wocky/wocky.h>
 
 #include <salut/connection.h>
 

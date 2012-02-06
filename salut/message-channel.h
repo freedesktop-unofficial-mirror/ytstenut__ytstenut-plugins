@@ -25,7 +25,7 @@
 
 #include <telepathy-glib/base-channel.h>
 
-#include <wocky/wocky-ll-contact.h>
+#include <wocky/wocky.h>
 
 #include <salut/connection.h>
 
