@@ -36,8 +36,8 @@
 
 #ifdef SALUT
 #include <salut/caps-channel-manager.h>
-typedef SalutConnection FooConnection;
-#define foo_connection_get_session salut_connection_get_session
+typedef SalutPluginConnection FooConnection;
+#define foo_connection_get_session salut_plugin_connection_get_session
 #else
 #include <gabble/caps-channel-manager.h>
 typedef GabblePluginConnection FooConnection;
@@ -288,7 +288,7 @@ ytst_channel_manager_constructed (GObject *object)
   priv->channels = g_queue_new ();
 
 #ifdef SALUT
-  session = salut_connection_get_session (priv->connection);
+  session = salut_plugin_connection_get_session (priv->connection);
 
   ytst_channel_manager_porter_available_cb (priv->connection,
       wocky_session_get_porter (session), self);
@@ -476,7 +476,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   DEBUG ("Requested channel for handle: %u (%s)", handle, name);
 
 #ifdef SALUT
-  session = salut_connection_get_session (priv->connection);
+  session = salut_plugin_connection_get_session (priv->connection);
   factory = wocky_session_get_contact_factory (session);
   contact = wocky_contact_factory_lookup_ll_contact (factory, name);
   if (contact == NULL)
@@ -516,7 +516,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
 
   request = ytst_message_channel_build_request (request_properties,
 #ifdef SALUT
-      salut_connection_get_name (priv->connection), contact,
+      salut_plugin_connection_get_name (priv->connection), contact,
 #else
       full_jid, jid,
 #endif

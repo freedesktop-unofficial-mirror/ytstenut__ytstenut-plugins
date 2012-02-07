@@ -69,7 +69,7 @@ enum
 struct _YtstStatusPrivate
 {
   WockySession *session;
-  SalutConnection *connection;
+  SalutPluginConnection *connection;
 
   guint handler_id;
   gulong capabilities_changed_id;
@@ -596,8 +596,8 @@ ytst_status_class_init (YtstStatusClass *klass)
   param_spec = g_param_spec_object (
       "connection",
       "Salut connection",
-      "SalutConnection object",
-      SALUT_TYPE_CONNECTION,
+      "SalutPluginConnection object",
+      SALUT_TYPE_PLUGIN_CONNECTION,
       G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS);
   g_object_class_install_property (object_class, PROP_CONNECTION,
       param_spec);
@@ -702,7 +702,7 @@ ytst_status_advertise_status (TpYtsSvcStatus *svc,
       capability);
 
   stanza = wocky_pubsub_make_event_stanza (capability,
-      salut_connection_get_name (priv->connection), &item);
+      salut_plugin_connection_get_name (priv->connection), &item);
 
   wocky_node_add_node_tree (item, status_tree);
   g_object_unref (status_tree);
@@ -744,7 +744,7 @@ sidecar_iface_init (SalutSidecarInterface *iface)
 
 YtstStatus *
 ytst_status_new (WockySession *session,
-    SalutConnection *connection)
+    SalutPluginConnection *connection)
 {
   return g_object_new (YTST_TYPE_STATUS,
       "session", session,

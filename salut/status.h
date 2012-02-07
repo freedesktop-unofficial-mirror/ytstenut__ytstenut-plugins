@@ -27,7 +27,7 @@
 
 #include <wocky/wocky-session.h>
 
-#include <salut/connection.h>
+#include <salut/plugin-connection.h>
 
 G_BEGIN_DECLS
 
@@ -63,7 +63,7 @@ GType ytst_status_get_type (void);
   (G_TYPE_INSTANCE_GET_CLASS ((obj), YTST_TYPE_STATUS, YtstStatusClass))
 
 YtstStatus * ytst_status_new (WockySession *session,
-    SalutConnection *connection);
+    SalutPluginConnection *connection);
 
 G_END_DECLS
 

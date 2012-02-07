@@ -48,7 +48,7 @@
 #include <wocky/wocky-xmpp-writer.h>
 #include <wocky/wocky-xmpp-error-enumtypes.h>
 
-#include <salut/connection.h>
+#include <salut/plugin-connection.h>
 
 #define DEBUG(msg, ...) \
   g_debug ("%s: " msg, G_STRFUNC, ##__VA_ARGS__)
@@ -332,8 +332,8 @@ ytst_message_channel_close (TpBaseChannel *chan)
     {
       TpBaseConnection *conn = tp_base_channel_get_connection (
           TP_BASE_CHANNEL (self));
-      WockySession *session = salut_connection_get_session (
-          SALUT_CONNECTION (conn));
+      WockySession *session = salut_plugin_connection_get_session (
+          SALUT_PLUGIN_CONNECTION (conn));
 
       wocky_porter_send_iq_error (
           wocky_session_get_porter (session),
@@ -593,7 +593,7 @@ ytst_message_channel_request (TpYtsSvcChannel *channel,
       return;
     }
 
-  session = salut_connection_get_session (SALUT_CONNECTION (
+  session = salut_plugin_connection_get_session (SALUT_PLUGIN_CONNECTION (
           tp_base_channel_get_connection (TP_BASE_CHANNEL (self))));
 
   wocky_porter_send_iq_async (wocky_session_get_porter (session),
@@ -621,9 +621,9 @@ ytst_message_channel_reply (TpYtsSvcChannel *channel,
 {
   YtstMessageChannel *self = YTST_MESSAGE_CHANNEL (channel);
   YtstMessageChannelPrivate *priv = self->priv;
-  SalutConnection *conn = SALUT_CONNECTION (tp_base_channel_get_connection (
-          TP_BASE_CHANNEL (self)));
-  WockySession *session = salut_connection_get_session (conn);
+  SalutPluginConnection *conn = SALUT_PLUGIN_CONNECTION (
+      tp_base_channel_get_connection ( TP_BASE_CHANNEL (self)));
+  WockySession *session = salut_plugin_connection_get_session (conn);
   WockyNodeTree *body_tree = NULL;
   WockyNode *msg_node;
   WockyStanza *reply;
@@ -693,9 +693,9 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
   YtstMessageChannelPrivate *priv = self->priv;
   const gchar *type;
   GError *error = NULL;
-  SalutConnection *conn = SALUT_CONNECTION (tp_base_channel_get_connection (
-          TP_BASE_CHANNEL (self)));
-  WockySession *session = salut_connection_get_session (conn);
+  SalutPluginConnection *conn = SALUT_PLUGIN_CONNECTION (
+      tp_base_channel_get_connection (TP_BASE_CHANNEL (self)));
+  WockySession *session = salut_plugin_connection_get_session (conn);
   WockyStanza *reply;
 
   /* Can't call this method from this side */
@@ -771,7 +771,7 @@ channel_ytstenut_iface_init (gpointer g_iface,
  */
 
 YtstMessageChannel *
-ytst_message_channel_new (SalutConnection *connection,
+ytst_message_channel_new (SalutPluginConnection *connection,
     WockyLLContact *contact,
     WockyStanza *request,
     TpHandle handle,
@@ -780,7 +780,7 @@ ytst_message_channel_new (SalutConnection *connection,
 {
   YtstMessageChannel *channel;
 
-  g_return_val_if_fail (SALUT_IS_CONNECTION (connection), NULL);
+  g_return_val_if_fail (SALUT_IS_PLUGIN_CONNECTION (connection), NULL);
   g_return_val_if_fail (WOCKY_IS_LL_CONTACT (contact), NULL);
   g_return_val_if_fail (WOCKY_IS_STANZA (request), NULL);
 
