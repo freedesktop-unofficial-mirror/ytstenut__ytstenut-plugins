@@ -133,16 +133,7 @@ check-separate:
 EXTRA_DIST = \
 	$(TWISTED_BASIC_TESTS) \
 	$(TWISTED_SEPARATE_TESTS) \
-	accounts/README \
-	chandlers/README \
-	telepathy/clients/README \
-	telepathy/clients/Logger.client \
-	telepathy/managers/fakecm.manager \
-	telepathy/managers/onewitheverything.manager \
-	telepathy/managers/README \
 	mcconstants.py \
-        fakeclient.py \
-        fakecm.py \
 	mctest.py \
 	mcservicetest.py \
 	salutconstants.py \

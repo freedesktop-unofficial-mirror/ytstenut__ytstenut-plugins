@@ -1,6 +1,6 @@
 AC_INIT(ytstenut-plugins, 0.2.0)
 
-AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+AM_INIT_AUTOMAKE([tar-ustar])
 AM_CONFIG_HEADER(config.h)
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
