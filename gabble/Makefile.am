@@ -40,5 +40,5 @@ Android.mk: Makefile.am $(BUILT_SOURCES)
 	 -:CFLAGS $(DEFS) $(CFLAGS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	  $(AM_CFLAGS) \
 	 -:CPPFLAGS $(CPPFLAGS) $(AM_CPPFLAGS) \
-	 -:LDFLAGS $(AM_LDFLAGS) $(ytstenut_gabble_la_LIBADD) -ltelepathy-gabble \
+	 -:LDFLAGS $(AM_LDFLAGS) $(ytstenut_gabble_la_LIBADD) $(GABBLE_LIBS) -lgabble-plugins\
 	> $@
