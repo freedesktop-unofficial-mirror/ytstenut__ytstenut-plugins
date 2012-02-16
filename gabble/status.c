@@ -30,12 +30,6 @@
 #include <telepathy-glib/svc-generic.h>
 #include <telepathy-glib/gtypes.h>
 
-#include <wocky/wocky-pubsub-helpers.h>
-#include <wocky/wocky-xmpp-reader.h>
-#include <wocky/wocky-xmpp-writer.h>
-#include <wocky/wocky-xep-0115-capabilities.h>
-#include <wocky/wocky-data-form.h>
-
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
 #include "utils.h"

@@ -32,7 +32,7 @@
 #include <telepathy-glib/interfaces.h>
 #include <telepathy-glib/util.h>
 
-#include <wocky/wocky-session.h>
+#include <wocky/wocky.h>
 
 #ifdef SALUT
 #include <salut/caps-channel-manager.h>
