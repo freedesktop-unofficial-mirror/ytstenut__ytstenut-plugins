@@ -149,10 +149,10 @@ ytstenut_plugin_create_sidecar_finish (
 static GPtrArray *
 ytstenut_plugin_create_channel_managers (
     FooPlugin *plugin,
-    FooConnection *plugin_connection,
-    TpBaseConnection *connection)
+    FooConnection *plugin_connection)
 {
   GPtrArray *ret = g_ptr_array_sized_new (1);
+  TpBaseConnection *connection = TP_BASE_CONNECTION (plugin_connection);
 
   DEBUG ("%p on connection %p", plugin, plugin_connection);
 
