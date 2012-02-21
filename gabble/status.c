@@ -30,8 +30,6 @@
 #include <telepathy-glib/svc-generic.h>
 #include <telepathy-glib/gtypes.h>
 
-#include <wocky/wocky.h>
-
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
 #include "utils.h"

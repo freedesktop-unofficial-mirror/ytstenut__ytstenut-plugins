@@ -30,7 +30,7 @@
 #include <salut/plugin.h>
 #include <salut/protocol.h>
 typedef SalutPlugin FooPlugin;
-typedef SalutConnection FooConnection;
+typedef SalutPluginConnection FooConnection;
 typedef SalutSidecar FooSidecar;
 #else
 #include <gabble/plugin.h>
@@ -96,16 +96,8 @@ ytstenut_plugin_create_sidecar_async (
     gpointer user_data)
 {
   GSimpleAsyncResult *result = g_simple_async_result_new (G_OBJECT (plugin),
-      callback, user_data,
-#ifdef SALUT
-      /* sic: all plugins share salut_plugin_create_sidecar_finish() so we
-       * need to use the same source tag.
-       */
-      salut_plugin_create_sidecar_async
-#else
-      ytstenut_plugin_create_sidecar_async
-#endif
-      );
+      callback, user_data, ytstenut_plugin_create_sidecar_async);
+
   FooSidecar *sidecar = NULL;
 
   if (!tp_strdiff (sidecar_interface, TP_YTS_IFACE_STATUS))
@@ -127,14 +119,13 @@ ytstenut_plugin_create_sidecar_async (
   g_object_unref (result);
 }
 
-#ifdef GABBLE
-static GabbleSidecar *
+static FooSidecar *
 ytstenut_plugin_create_sidecar_finish (
-     GabblePlugin *plugin,
+     FooPlugin *plugin,
      GAsyncResult *result,
      GError **error)
 {
-  GabbleSidecar *sidecar;
+  FooSidecar *sidecar;
 
   if (g_simple_async_result_propagate_error (G_SIMPLE_ASYNC_RESULT (result),
         error))
@@ -143,12 +134,17 @@ ytstenut_plugin_create_sidecar_finish (
   g_return_val_if_fail (g_simple_async_result_is_valid (result,
         G_OBJECT (plugin), ytstenut_plugin_create_sidecar_async), NULL);
 
-  sidecar = GABBLE_SIDECAR (g_simple_async_result_get_op_res_gpointer (
+  sidecar =
+#ifdef GABBLE
+    GABBLE_SIDECAR (g_simple_async_result_get_op_res_gpointer (
         G_SIMPLE_ASYNC_RESULT (result)));
+#else
+    SALUT_SIDECAR (g_simple_async_result_get_op_res_gpointer (
+        G_SIMPLE_ASYNC_RESULT (result)));
+#endif
 
   return g_object_ref (sidecar);
 }
-#endif
 
 static GPtrArray *
 ytstenut_plugin_create_channel_managers (
@@ -179,16 +175,14 @@ plugin_iface_init (gpointer g_iface,
 #ifdef SALUT
   iface->api_version = SALUT_PLUGIN_CURRENT_VERSION;
   iface->initialize = ytstenut_plugin_initialize;
-  iface->create_sidecar = ytstenut_plugin_create_sidecar_async;
-#else
-  iface->create_sidecar_async = ytstenut_plugin_create_sidecar_async;
-  iface->create_sidecar_finish = ytstenut_plugin_create_sidecar_finish;
 #endif
 
   iface->name = "Ytstenut plugin";
   iface->version = PACKAGE_VERSION;
 
   iface->sidecar_interfaces = sidecar_interfaces;
+  iface->create_sidecar_async = ytstenut_plugin_create_sidecar_async;
+  iface->create_sidecar_finish = ytstenut_plugin_create_sidecar_finish;
   iface->create_channel_managers = ytstenut_plugin_create_channel_managers;
 }
 

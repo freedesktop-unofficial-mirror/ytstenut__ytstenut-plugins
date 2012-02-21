@@ -49,8 +49,6 @@
 
 #include <telepathy-ytstenut-glib/telepathy-ytstenut-glib.h>
 
-#include <wocky/wocky.h>
-
 #include <gabble/plugin-connection.h>
 
 #define DEBUG(msg, ...) \
