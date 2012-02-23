@@ -131,9 +131,18 @@ fi
 
 # ------------------------------------------------------------------------------
 
-PKG_CHECK_MODULES(WOCKY, wocky >= 0.0.0)
-AC_SUBST(WOCKY_CFLAGS)
-AC_SUBST(WOCKY_LIBS)
+dnl Check if Android build
+AC_ARG_WITH(shared-wocky,
+            AS_HELP_STRING([--with-shared-wocky],[Use system versions of Wocky]),
+            shared_wocky=$withval, shared_wocky=no )
+
+dnl Check for Wocky
+# re-enable once Wocky has been released as a lib
+if test x$shared_wocky = xyes; then
+  PKG_CHECK_MODULES(WOCKY, wocky >= 0.0.0)
+  AC_SUBST(WOCKY_CFLAGS)
+  AC_SUBST(WOCKY_LIBS)
+fi
 
 AC_ARG_ENABLE(debug,
 	AC_HELP_STRING([--enable-debug],

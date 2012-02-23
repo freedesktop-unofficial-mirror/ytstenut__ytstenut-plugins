@@ -20,7 +20,7 @@ ytstenut-plugins-configure-real:
 	PKG_CONFIG_TOP_BUILD_DIR=$(PKG_CONFIG_TOP_BUILD_DIR) \
 	$(YTSTENUT_PLUGINS_TOP)/$(CONFIGURE) --host=arm-linux-androideabi \
 		--disable-spec-documentation --disable-qt4 \
-		--disable-Werror && \
+		--disable-Werror --with-shared-wocky && \
 	for file in $(YTSTENUT_PLUGINS_BUILT_SOURCES); do \
 		rm -f $$file && \
 		make -C $$(dirname $$file) $$(basename $$file) ; \
