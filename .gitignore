@@ -45,3 +45,8 @@ stamp-h1
 /tests/twisted/tmp-*/
 /tests/twisted/config.py
 /tests/twisted/with-session-bus*
+
+gabble/caps-manager.c
+gabble/channel-manager.c
+gabble/utils.c
+gabble/ytstenut.c
