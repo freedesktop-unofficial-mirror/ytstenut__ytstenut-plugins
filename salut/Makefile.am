@@ -16,6 +16,9 @@ ytstenut_salut_la_LIBADD = \
 	$(TELEPATHY_YTSTENUT_LIBS) \
 	$(WOCKY_LIBS)
 
+$(copied_files):
+	cp $(top_srcdir)/plugin-base/$@ .
+
 copied_files = \
 	ytstenut.c \
 	caps-manager.c \

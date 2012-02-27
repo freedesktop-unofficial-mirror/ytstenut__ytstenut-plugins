@@ -50,3 +50,8 @@ gabble/caps-manager.c
 gabble/channel-manager.c
 gabble/utils.c
 gabble/ytstenut.c
+
+salut/caps-manager.c
+salut/channel-manager.c
+salut/utils.c
+salut/ytstenut.c
