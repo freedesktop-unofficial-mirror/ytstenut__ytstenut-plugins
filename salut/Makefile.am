@@ -14,6 +14,7 @@ AM_LDFLAGS = -module -avoid-version -shared
 
 ytstenut_salut_la_LIBADD = \
 	$(TELEPATHY_YTSTENUT_LIBS) \
+	$(SALUT_LIBS) \
 	$(WOCKY_LIBS)
 
 $(copied_files):
