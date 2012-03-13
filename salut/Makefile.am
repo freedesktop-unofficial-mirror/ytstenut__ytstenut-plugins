@@ -10,7 +10,7 @@ plugindir = $(salutplugindir)
 
 plugin_LTLIBRARIES = ytstenut-salut.la
 
-AM_LDFLAGS = -module -avoid-version -shared
+AM_LDFLAGS = -module -avoid-version -shared -no-undefined
 
 ytstenut_salut_la_LIBADD = \
 	$(TELEPATHY_YTSTENUT_LIBS) \
