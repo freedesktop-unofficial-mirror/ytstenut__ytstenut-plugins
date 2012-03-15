@@ -28,7 +28,7 @@
 
 #ifdef SALUT
 #include <salut/plugin.h>
-#include <salut/protocol.h>
+#include <salut/plugin-connection.h>
 typedef SalutPlugin FooPlugin;
 typedef SalutPluginConnection FooConnection;
 typedef SalutSidecar FooSidecar;
