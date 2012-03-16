@@ -28,7 +28,7 @@
 
 #ifdef SALUT
 #include <salut/plugin.h>
-#include <salut/protocol.h>
+#include <salut/plugin-connection.h>
 typedef SalutPlugin FooPlugin;
 typedef SalutPluginConnection FooConnection;
 typedef SalutSidecar FooSidecar;
@@ -74,13 +74,14 @@ ytst_plugin_class_init (YtstPluginClass *klass)
 #ifdef SALUT
 static void
 ytstenut_plugin_initialize (SalutPlugin *plugin,
-    TpBaseConnectionManager *connection_manager)
+    TpBaseConnectionManager *connection_manager,
+    const SalutPluginInitializeCallbacks *callbacks)
 {
   TpBaseProtocol *protocol;
 
   DEBUG ("%p on connection manager %p", plugin, connection_manager);
 
-  protocol = salut_protocol_new (G_TYPE_NONE,
+  protocol = callbacks->create_protocol (G_TYPE_NONE,
       "_ytstenut._tcp", "local-ytstenut", "Ytstenut protocol", "im-ytstenut");
   tp_base_connection_manager_add_protocol (connection_manager, protocol);
 }

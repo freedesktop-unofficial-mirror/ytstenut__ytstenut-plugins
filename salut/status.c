@@ -26,7 +26,6 @@
 #include <string.h>
 
 #include <salut/plugin.h>
-#include <salut/util.h>
 
 #include <telepathy-glib/svc-generic.h>
 #include <telepathy-glib/gtypes.h>
@@ -701,7 +700,7 @@ ytst_status_advertise_status (TpYtsSvcStatus *svc,
   wocky_node_add_node_tree (item, status_tree);
   g_object_unref (status_tree);
 
-  salut_send_ll_pep_event (priv->session, stanza);
+  wocky_send_ll_pep_event (priv->session, stanza);
   g_object_unref (stanza);
 
 out:
