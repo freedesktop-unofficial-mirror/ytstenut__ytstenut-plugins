@@ -75,13 +75,13 @@ ytst_plugin_class_init (YtstPluginClass *klass)
 static void
 ytstenut_plugin_initialize (SalutPlugin *plugin,
     TpBaseConnectionManager *connection_manager,
-    SalutCreateProtocolImpl callback)
+    const SalutPluginInitializeCallbacks *callbacks)
 {
   TpBaseProtocol *protocol;
 
   DEBUG ("%p on connection manager %p", plugin, connection_manager);
 
-  protocol = callback (G_TYPE_NONE,
+  protocol = callbacks->create_protocol (G_TYPE_NONE,
       "_ytstenut._tcp", "local-ytstenut", "Ytstenut protocol", "im-ytstenut");
   tp_base_connection_manager_add_protocol (connection_manager, protocol);
 }
