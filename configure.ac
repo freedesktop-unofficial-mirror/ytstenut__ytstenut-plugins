@@ -74,7 +74,7 @@ then
 PKG_CHECK_MODULES(SALUT, telepathy-salut)
 AC_SUBST(SALUT_LIBS)
 AC_SUBST(SALUT_CFLAGS)
-salutplugindir=`pkg-config --variable=plugindir telepathy-salut`
+salutplugindir=`pkg-config --variable=pluginexecdir telepathy-salut`
 AC_SUBST(salutplugindir)
 
 AC_MSG_CHECKING([telepathy-salut executable])
@@ -116,7 +116,7 @@ then
 PKG_CHECK_MODULES(GABBLE, telepathy-gabble)
 AC_SUBST(GABBLE_LIBS)
 AC_SUBST(GABBLE_CFLAGS)
-gabbleplugindir=`pkg-config --variable=plugindir telepathy-gabble`
+gabbleplugindir=`pkg-config --variable=pluginexecdir telepathy-gabble`
 AC_SUBST(gabbleplugindir)
 
 AC_MSG_CHECKING([telepathy-gabble executable])
