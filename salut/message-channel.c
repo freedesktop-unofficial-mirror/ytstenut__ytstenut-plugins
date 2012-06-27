@@ -573,14 +573,14 @@ ytst_message_channel_request (TpYtsSvcChannel *channel,
   /* Can't call this method from this side */
   if (!tp_base_channel_is_requested (TP_BASE_CHANNEL (channel)))
     {
-      g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+      g_set_error_literal (&error, TP_ERROR, TP_ERROR_NOT_AVAILABLE,
           "Request() may not be called on the reply side of a channel");
       goto done;
     }
 
   if (priv->requested)
     {
-      g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+      g_set_error_literal (&error, TP_ERROR, TP_ERROR_NOT_AVAILABLE,
           "Request() has already been called");
       dbus_g_method_return_error (context, error);
       g_clear_error (&error);
@@ -626,7 +626,7 @@ ytst_message_channel_reply (TpYtsSvcChannel *channel,
   /* Can't call this method from this side */
   if (tp_base_channel_is_requested (TP_BASE_CHANNEL (channel)))
     {
-      g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+      g_set_error_literal (&error, TP_ERROR, TP_ERROR_NOT_AVAILABLE,
           "Reply() may not be called on the request side of a channel");
       goto done;
     }
@@ -695,7 +695,7 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
   /* Can't call this method from this side */
   if (tp_base_channel_is_requested (TP_BASE_CHANNEL (channel)))
     {
-      g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+      g_set_error_literal (&error, TP_ERROR, TP_ERROR_NOT_AVAILABLE,
           "Fail() may not be called on the request side of a channel");
       goto done;
     }
@@ -703,7 +703,7 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
   /* Can't call this after a successful call */
   if (priv->replied)
     {
-      g_set_error_literal (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+      g_set_error_literal (&error, TP_ERROR, TP_ERROR_NOT_AVAILABLE,
           "Fail() or Reply() has already been called");
       goto done;
     }
@@ -713,7 +713,7 @@ ytst_message_channel_fail (TpYtsSvcChannel *channel,
       ytst_message_error_type_to_wocky (error_type));
   if (type == NULL)
     {
-      g_set_error_literal (&error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+      g_set_error_literal (&error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "ErrorType is set to an invalid value.");
       goto done;
     }
@@ -818,7 +818,7 @@ ytst_message_channel_build_request (GHashTable *request_props,
         sub_type = WOCKY_STANZA_SUB_TYPE_SET;
         break;
       default:
-        g_set_error (error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+        g_set_error (error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
             "The RequestType property is invalid.");
         return NULL;
     }
@@ -827,14 +827,14 @@ ytst_message_channel_build_request (GHashTable *request_props,
       TP_YTS_IFACE_CHANNEL ".TargetService");
   if (target_service == NULL)
     {
-      g_set_error (error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+      g_set_error (error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "The TargetService property must be set.");
       return NULL;
     }
   else if (!tp_dbus_check_valid_bus_name (target_service,
       TP_DBUS_NAME_TYPE_WELL_KNOWN, NULL))
     {
-      g_set_error (error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+      g_set_error (error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "The TargetService property has an invalid syntax.");
       return NULL;
     }
@@ -843,7 +843,7 @@ ytst_message_channel_build_request (GHashTable *request_props,
       TP_YTS_IFACE_CHANNEL ".InitiatorService");
   if (initiator_service == NULL)
     {
-      g_set_error (error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+      g_set_error (error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "The InitiatorService property must be set.");
       return NULL;
     }
@@ -861,7 +861,7 @@ ytst_message_channel_build_request (GHashTable *request_props,
   if (!attributes && tp_asv_lookup (request_props,
           TP_YTS_IFACE_CHANNEL ".RequestAttributes"))
     {
-      g_set_error (error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+      g_set_error (error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "The RequestAttributes property is invalid.");
       return NULL;
     }

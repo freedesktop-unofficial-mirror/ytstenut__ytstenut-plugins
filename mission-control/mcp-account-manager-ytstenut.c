@@ -579,7 +579,7 @@ mcp_account_manager_ytstenut_release (TpYtsSvcAccountManager *manager,
   else
     {
       DEBUG ("Caller called Release() without Hold()");
-      error = g_error_new_literal (TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+      error = g_error_new_literal (TP_ERROR, TP_ERROR_NOT_AVAILABLE,
           "The Hold() method must be called successfully by this caller before "
           "calling Release().");
       dbus_g_method_return_error (context, error);

@@ -481,7 +481,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   contact = wocky_contact_factory_lookup_ll_contact (factory, name);
   if (contact == NULL)
     {
-      g_set_error (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+      g_set_error (&error, TP_ERROR, TP_ERROR_NOT_AVAILABLE,
           "%s is not online", name);
       goto error;
     }
@@ -489,7 +489,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
   if (tp_asv_get_string (request_properties,
           TP_YTS_IFACE_CHANNEL ".TargetService") == NULL)
     {
-      g_set_error (&error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+      g_set_error (&error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "The TargetService property must be set.");
       goto error;
     }
@@ -504,7 +504,7 @@ ytst_channel_manager_create_channel (TpChannelManager *manager,
 
   if (resource == NULL)
     {
-      g_set_error (&error, TP_ERRORS, TP_ERROR_NOT_AVAILABLE,
+      g_set_error (&error, TP_ERROR, TP_ERROR_NOT_AVAILABLE,
           "Cannot find appropriate resource for contact.");
       goto error;
     }

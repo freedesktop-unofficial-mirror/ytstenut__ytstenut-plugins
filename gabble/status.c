@@ -697,14 +697,14 @@ ytst_status_advertise_status (TpYtsSvcStatus *svc,
 
   if (tp_str_empty (capability))
     {
-      g_set_error (&error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+      g_set_error (&error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "Capability argument must be set");
       goto out;
     }
 
   if (tp_str_empty (service_name))
     {
-      g_set_error (&error, TP_ERRORS, TP_ERROR_INVALID_ARGUMENT,
+      g_set_error (&error, TP_ERROR, TP_ERROR_INVALID_ARGUMENT,
           "Service name argument must be set");
       goto out;
     }
