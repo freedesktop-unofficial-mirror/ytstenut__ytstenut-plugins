@@ -341,25 +341,28 @@ contact_capabilities_changed (YtstStatus *self,
       gchar **yts_caps;
 
       type = g_hash_table_lookup (form->fields, "FORM_TYPE");
-      form_type = g_value_get_string (type->default_value);
 
       if (type == NULL
-          || !g_str_has_prefix (form_type, SERVICE_PREFIX))
-        {
-          continue;
-        }
+          || type->type != WOCKY_DATA_FORM_FIELD_TYPE_HIDDEN)
+        continue;
+
+      form_type = g_value_get_string (type->default_value);
+
+      if (!g_str_has_prefix (form_type, SERVICE_PREFIX))
+        continue;
 
       service = form_type + strlen (SERVICE_PREFIX);
 
       /* service type */
       tmp = g_hash_table_lookup (form->fields, "type");
-      if (tmp == NULL)
+      if (tmp == NULL || tmp->type != WOCKY_DATA_FORM_FIELD_TYPE_TEXT_SINGLE)
         continue;
       yts_service_name = g_value_dup_string (tmp->default_value);
 
       /* name map */
       tmp = g_hash_table_lookup (form->fields, "name");
-      if (tmp != NULL && tmp->default_value != NULL)
+      if (tmp != NULL && tmp->default_value != NULL &&
+          tmp->type == WOCKY_DATA_FORM_FIELD_TYPE_TEXT_MULTI)
         {
           yts_name_map = get_name_map_from_strv (
               g_value_get_boxed (tmp->default_value));
@@ -371,7 +374,8 @@ contact_capabilities_changed (YtstStatus *self,
 
       /* caps */
       tmp = g_hash_table_lookup (form->fields, "capabilities");
-      if (tmp != NULL && tmp->default_value != NULL)
+      if (tmp != NULL && tmp->default_value != NULL &&
+          tmp->type == WOCKY_DATA_FORM_FIELD_TYPE_TEXT_MULTI)
         {
           yts_caps = g_strdupv (tmp->raw_value_contents);
         }
