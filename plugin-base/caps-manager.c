@@ -62,6 +62,7 @@ G_DEFINE_TYPE_WITH_CODE (YtstCapsManager, ytst_caps_manager, G_TYPE_OBJECT,
 /* private structure */
 struct _YtstCapsManagerPrivate
 {
+  GHashTable *cap_sets;
   GHashTable *services;
 };
 
@@ -72,6 +73,8 @@ ytst_caps_manager_init (YtstCapsManager *self)
       YTST_TYPE_CAPS_MANAGER, YtstCapsManagerPrivate);
   self->priv = priv;
 
+  priv->cap_sets = g_hash_table_new_full (g_str_hash, g_str_equal,
+      g_free, (GDestroyNotify) gabble_capability_set_free);
   priv->services = g_hash_table_new_full (g_str_hash, g_str_equal,
       g_free, g_object_unref);
 }
@@ -81,6 +84,7 @@ ytst_caps_manager_dispose (GObject *object)
 {
   YtstCapsManager *self = YTST_CAPS_MANAGER (object);
 
+  tp_clear_pointer (&(self->priv->cap_sets), g_hash_table_unref);
   tp_clear_pointer (&(self->priv->services), g_hash_table_unref);
 
   if (G_OBJECT_CLASS (ytst_caps_manager_parent_class)->dispose)
@@ -169,6 +173,14 @@ make_new_data_form (const gchar *uid,
 
 #ifdef SALUT
 static void
+add_to_set (gpointer key,
+    gpointer value,
+    gpointer user_data)
+{
+  gabble_capability_set_update (user_data, value);
+}
+
+static void
 add_to_array (gpointer key,
     gpointer value,
     gpointer user_data)
@@ -195,9 +207,13 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
   const gchar *yts_type = NULL;
   GPtrArray *names = g_ptr_array_new ();
   GPtrArray *caps = g_ptr_array_new ();
+  GabbleCapabilitySet *client_set;
 
 #ifdef GABBLE
   guint i;
+#endif
+
+  client_set = gabble_capability_set_new ();
 
   for (i = 0; i < filters->len; i++)
     {
@@ -232,7 +248,7 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
         {
           cap = *t + strlen (INTERESTED);
           feature = g_strdup_printf ("%s+notify", cap);
-          gabble_capability_set_add (cap_set, feature);
+          gabble_capability_set_add (client_set, feature);
           g_free (feature);
         }
       else if (g_str_has_prefix (*t, UID))
@@ -257,7 +273,8 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
    * clients. salut is arguably wrong here as it relies on the caps
    * channel manager keeping a record of what clients can do. gabble
    * does not need this and is simpler, so doesn't need the
-   * priv->services hash table at all. We should fix salut. */
+   * priv->cap_sets and priv->services hash tables at all.
+   * We should fix salut. */
 
   if (uid != NULL)
     {
@@ -265,19 +282,26 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
       g_hash_table_insert (priv->services,
           g_strdup (client_name),
           make_new_data_form (uid, yts_type, names, caps));
+      g_hash_table_insert (priv->cap_sets,
+          g_strdup (client_name), client_set);
 #else
       g_ptr_array_add (data_forms,
           make_new_data_form (uid, yts_type, names, caps));
+      gabble_capability_set_update (cap_set, client_set);
+      gabble_capability_set_free (client_set);
 #endif
     }
   else
     {
 #ifdef SALUT
       g_hash_table_remove (priv->services, client_name);
+      g_hash_table_remove (priv->cap_sets, client_name);
+      gabble_capability_set_free (client_set);
 #endif
     }
 
 #ifdef SALUT
+  g_hash_table_foreach (priv->cap_sets, add_to_set, cap_set);
   g_hash_table_foreach (priv->services, add_to_array, data_forms);
 #endif
 
