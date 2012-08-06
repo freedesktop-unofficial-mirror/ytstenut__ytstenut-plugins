@@ -139,6 +139,7 @@ make_new_data_form (const gchar *uid,
 
       '(', "field",
         '@', "var", "type",
+        '@', "type", "text-single",
         '(', "value",
           '$', yts_type,
         ')',
@@ -154,6 +155,7 @@ make_new_data_form (const gchar *uid,
     {
       tmp = wocky_node_add_child (node, "field");
       wocky_node_set_attribute (tmp, "var", "name");
+      wocky_node_set_attribute (tmp, "type", "text-multi");
       g_ptr_array_foreach (names, add_value_to_field, tmp);
     }
 
@@ -161,6 +163,7 @@ make_new_data_form (const gchar *uid,
     {
       tmp = wocky_node_add_child (node, "field");
       wocky_node_set_attribute (tmp, "var", "capabilities");
+      wocky_node_set_attribute (tmp, "type", "text-multi");
       g_ptr_array_foreach (caps, add_value_to_field, tmp);
     }
 
