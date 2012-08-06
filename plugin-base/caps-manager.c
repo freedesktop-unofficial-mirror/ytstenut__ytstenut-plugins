@@ -218,6 +218,7 @@ ytst_caps_manager_represent_client (GabbleCapsChannelManager *manager,
 
   client_set = gabble_capability_set_new ();
 
+#ifdef GABBLE
   for (i = 0; i < filters->len; i++)
     {
       GHashTable *channel_class = g_ptr_array_index (filters, i);
